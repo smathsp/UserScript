@@ -452,48 +452,51 @@
         const groupSelect = document.createElement('select');
         groupSelect.id = 'bili-area-group';
         groupSelect.style.cssText = 'padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-bottom: 8px; display: none;';
-        // 新增：切换大类时保存
-        groupSelect.addEventListener('change', function() {
-            const areaList = getCachedAreaList() || [];
-            const selectedIndex = this.options[this.selectedIndex].dataset.index;
-            // 保存大类id
-            GM_setValue('bili_last_groupid', groupSelect.value);
-            refreshAreaOptions(areaList, Number(selectedIndex));
-        });
 
         // 子分区选择器
         const areaSelect = document.createElement('select');
         areaSelect.id = 'bili-area';
         areaSelect.style.cssText = 'padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; display: none;';
-        // 新增：选择分区时保存
+
+        // 统一事件绑定
+        groupSelect.addEventListener('change', function() {
+            const areaList = getCachedAreaList() || [];
+            const selectedIndex = this.options[this.selectedIndex].dataset.index;
+            GM_setValue('bili_last_groupid', groupSelect.value);
+            updateAreaSelectors(areaList, Number(selectedIndex), groupSelect, areaSelect);
+        });
         areaSelect.addEventListener('change', function() {
             GM_setValue('bili_last_areaid', areaSelect.value);
-            // 同步保存大类id，保证切换子分区时也能恢复
             GM_setValue('bili_last_groupid', groupSelect.value);
         });
+        loading.onclick = function() {
+            if (loading.style.color === 'rgb(255, 75, 75)' || loading.style.color === '#ff4b4b') {
+                loadAndBindAreaList();
+            }
+        };
 
         container.appendChild(label);
         container.appendChild(loading);
         container.appendChild(groupSelect);
         container.appendChild(areaSelect);
 
-        // 分区数据加载与联动
-        function refreshAreaOptions(areaList, groupIdx = 0) {
-            groupSelect.innerHTML = '';
-            areaSelect.innerHTML = '';
+        // 合并后的分区刷新函数
+        function updateAreaSelectors(areaList, groupIdx = 0, groupSel = groupSelect, areaSel = areaSelect) {
+            groupSel.innerHTML = '';
+            areaSel.innerHTML = '';
             areaList.forEach((group, idx) => {
                 const option = document.createElement('option');
                 option.value = group.id;
                 option.textContent = group.name;
                 option.dataset.index = idx;
-                groupSelect.appendChild(option);
+                groupSel.appendChild(option);
             });
-            // 新增：优先恢复上次大类
+            // 恢复上次大类
             const lastGroupId = GM_getValue('bili_last_groupid');
             if (lastGroupId) {
-                for (let i = 0; i < groupSelect.options.length; i++) {
-                    if (groupSelect.options[i].value == lastGroupId) {
-                        groupSelect.selectedIndex = i;
+                for (let i = 0; i < groupSel.options.length; i++) {
+                    if (groupSel.options[i].value == lastGroupId) {
+                        groupSel.selectedIndex = i;
                         groupIdx = i;
                         break;
                     }
@@ -504,19 +507,23 @@
                     const option = document.createElement('option');
                     option.value = area.id;
                     option.textContent = area.name;
-                    areaSelect.appendChild(option);
+                    areaSel.appendChild(option);
                 });
             }
-            // 新增：自动选中上次保存的分区id
+            // 恢复上次分区id
             const lastAreaId = GM_getValue('bili_last_areaid');
-            if (lastAreaId && areaSelect.options.length > 0) {
-                for (let i = 0; i < areaSelect.options.length; i++) {
-                    if (areaSelect.options[i].value == lastAreaId) {
-                        areaSelect.selectedIndex = i;
+            if (lastAreaId && areaSel.options.length > 0) {
+                for (let i = 0; i < areaSel.options.length; i++) {
+                    if (areaSel.options[i].value == lastAreaId) {
+                        areaSel.selectedIndex = i;
                         break;
                     }
                 }
             }
+            // 显示选择器
+            loading.style.display = 'none';
+            groupSel.style.display = 'block';
+            areaSel.style.display = 'block';
         }
 
         // 加载分区数据
@@ -526,16 +533,11 @@
             areaSelect.style.display = 'none';
             loading.textContent = '正在加载分区列表...';
             loading.style.color = '#666';
-            // 先尝试从缓存加载
             const cachedList = getCachedAreaList();
             if (cachedList) {
-                loading.style.display = 'none';
-                groupSelect.style.display = 'block';
-                areaSelect.style.display = 'block';
-                refreshAreaOptions(cachedList);
+                updateAreaSelectors(cachedList, 0, groupSelect, areaSelect);
                 return;
             }
-            // 从API获取
             GM_xmlhttpRequest({
                 method: "GET",
                 url: "https://api.live.bilibili.com/room/v1/Area/getList?show_pinyin=1",
@@ -545,10 +547,7 @@
                         const result = JSON.parse(response.responseText);
                         if (result.code === 0) {
                             cacheAreaList(result.data);
-                            loading.style.display = 'none';
-                            groupSelect.style.display = 'block';
-                            areaSelect.style.display = 'block';
-                            refreshAreaOptions(result.data);
+                            updateAreaSelectors(result.data, 0, groupSelect, areaSelect);
                         } else {
                             showAreaLoadError();
                         }
@@ -562,23 +561,7 @@
             });
         }
 
-        // 优化：点击加载失败提示可重试
-        loading.addEventListener('click', function() {
-            if (loading.style.color === 'rgb(255, 75, 75)' || loading.style.color === '#ff4b4b') {
-                loadAndBindAreaList();
-            }
-        });
-
-        // 绑定分区大类变更事件
-        groupSelect.addEventListener('change', function() {
-            const areaList = getCachedAreaList() || [];
-            const selectedIndex = this.options[this.selectedIndex].dataset.index;
-            refreshAreaOptions(areaList, Number(selectedIndex));
-        });
-
-        // 加载分区数据
         loadAndBindAreaList();
-
         return container;
     }
 
@@ -819,14 +802,35 @@
         GM_setValue('bili_area_list_time', new Date().getTime());
     }
 
-    // 自动填充房间ID和获取CSRF
+    // 拆分 autoFillRoomId 内部逻辑
+    function getRoomIdFromUrl() {
+        const urlMatch = window.location.href.match(/live\.bilibili\.com\/(\d+)/);
+        return urlMatch && urlMatch[1] ? urlMatch[1] : null;
+    }
+    function getRoomIdFromElement() {
+        const roomElement = document.querySelector('.room-info-anchor-name');
+        if (roomElement) {
+            const href = roomElement.getAttribute('href');
+            if (href) {
+                const match = href.match(/\/(\d+)/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+        }
+        return null;
+    }
+    function getRoomIdFromHistory() {
+        return GM_getValue('bili_last_roomid');
+    }
+    function getCsrfToken() {
+        const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('bili_jct='));
+        return csrfCookie ? csrfCookie.split('=')[1] : null;
+    }
     function autoFillRoomId() {
-        // 优先读取本地保存的上次填写内容
         const lastRoomId = GM_getValue('bili_last_roomid');
         const lastAreaId = GM_getValue('bili_last_areaid');
         const lastTitle = GM_getValue('bili_last_title');
-
-        // 如果有保存的直播信息，优先使用
         if (streamInfo && streamInfo.roomId) {
             document.getElementById('bili-room-id').value = streamInfo.roomId;
             roomId = streamInfo.roomId;
@@ -834,63 +838,28 @@
                 document.getElementById('bili-title').value = streamInfo.title;
             }
         } else {
-            // 从网页中获取房间ID
-            let foundRoomId = null;
-
-            // 尝试从URL获取
-            const urlMatch = window.location.href.match(/live\.bilibili\.com\/(\d+)/);
-            if (urlMatch && urlMatch[1]) {
-                foundRoomId = urlMatch[1];
-            }
-
-            // 尝试从页面元素获取
-            if (!foundRoomId) {
-                // 直播页面元素
-                const roomElement = document.querySelector('.room-info-anchor-name');
-                if (roomElement) {
-                    const href = roomElement.getAttribute('href');
-                    if (href) {
-                        const match = href.match(/\/(\d+)/);
-                        if (match && match[1]) {
-                            foundRoomId = match[1];
-                        }
-                    }
-                }
-            }
-
-            // 尝试从个人空间页面获取
+            let foundRoomId = getRoomIdFromUrl() || getRoomIdFromElement();
             if (!foundRoomId && window.location.href.includes('space.bilibili.com')) {
-                // 从个人空间获取用户ID
                 const midMatch = window.location.href.match(/space\.bilibili\.com\/(\d+)/);
                 if (midMatch && midMatch[1]) {
-                    // 保存用户ID，以后可以用于API查询对应的房间号
                     GM_setValue('bili_user_mid', midMatch[1]);
                 }
             }
-
-            // 如果仍未找到且有历史记录，使用上次填写的房间ID
             if (!foundRoomId) {
-                const lastRoomId = GM_getValue('bili_last_roomid');
-                if (lastRoomId) {
-                    foundRoomId = lastRoomId;
-                }
+                foundRoomId = getRoomIdFromHistory();
             }
-
             if (foundRoomId) {
                 document.getElementById('bili-room-id').value = foundRoomId;
                 roomId = foundRoomId;
-                // 保存最近使用的房间ID
                 GM_setValue('bili_last_roomid', foundRoomId);
             } else if (lastRoomId) {
                 document.getElementById('bili-room-id').value = lastRoomId;
                 roomId = lastRoomId;
             }
         }
-        // 标题自动填充
         if (document.getElementById('bili-title') && lastTitle) {
             document.getElementById('bili-title').value = lastTitle;
         }
-        // 分区自动填充（需等分区下拉加载完成后设置）
         setTimeout(() => {
             if (lastAreaId) {
                 const areaSelect = document.getElementById('bili-area');
@@ -904,11 +873,7 @@
                 }
             }
         }, 500);
-        // 获取CSRF令牌
-        const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('bili_jct='));
-        if (csrfCookie) {
-            csrf = csrfCookie.split('=')[1];
-        }
+        csrf = getCsrfToken();
     }
 
     // 恢复直播状态
