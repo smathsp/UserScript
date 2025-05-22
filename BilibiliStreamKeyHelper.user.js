@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.3
+// @version      1.4
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
