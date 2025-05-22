@@ -22,6 +22,196 @@
 (function() {
     'use strict';
 
+    // 插入全局样式表，统一亮暗色模式
+    function insertGlobalStyle() {
+        if (document.getElementById('bili-stream-global-style')) return;
+        const style = document.createElement('style');
+        style.id = 'bili-stream-global-style';
+        style.innerHTML = `
+        :root {
+            --bili-bg: #fff;
+            --bili-fg: #222;
+            --bili-panel-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --bili-border: #eee;
+            --bili-input-bg: #fff;
+            --bili-input-fg: #222;
+            --bili-input-border: #ddd;
+            --bili-tip-bg: #fef0f1;
+            --bili-tip-fg: #d92b46;
+            --bili-tip-border: #fb7299;
+            --bili-btn-main: #fb7299;
+            --bili-btn-main-hover: #fc8bab;
+            --bili-btn-main-disabled: #bfbfbf;
+            --bili-btn-stop: #ff4b4b;
+            --bili-btn-stop-hover: #d9363e;
+            --bili-btn-stop-disabled: #999;
+            --bili-btn-text: #fff;
+            --bili-title-color: #fb7299;
+            --bili-label-color: #666;
+            --bili-tip-yellow-bg: #fffbe6;
+            --bili-tip-yellow-border: #faad14;
+            --bili-tip-yellow-fg: #faad14;
+            --bili-tip-green-bg: #e6ffed;
+            --bili-tip-green-border: #52c41a;
+            --bili-tip-green-fg: #389e0d;
+        }
+        .bili-dark-mode {
+            --bili-bg: #232324;
+            --bili-fg: #eee;
+            --bili-panel-shadow: 0 2px 10px rgba(0,0,0,0.6);
+            --bili-border: #444;
+            --bili-input-bg: #18181a;
+            --bili-input-fg: #eee;
+            --bili-input-border: #444;
+            --bili-tip-bg: #2d2326;
+            --bili-tip-fg: #ffb6c1;
+            --bili-tip-border: #fb7299;
+            --bili-btn-main: #fb7299;
+            --bili-btn-main-hover: #fc8bab;
+            --bili-btn-main-disabled: #bfbfbf;
+            --bili-btn-stop: #ff4b4b;
+            --bili-btn-stop-hover: #d9363e;
+            --bili-btn-stop-disabled: #999;
+            --bili-btn-text: #fff;
+            --bili-title-color: #fb7299;
+            --bili-label-color: #aaa;
+            --bili-tip-yellow-bg: #3a2d1a;
+            --bili-tip-yellow-border: #faad14;
+            --bili-tip-yellow-fg: #ffd666;
+            --bili-tip-green-bg: #1e2b22;
+            --bili-tip-green-border: #52c41a;
+            --bili-tip-green-fg: #b7eb8f;
+        }
+        #bili-stream-code-panel {
+            background-color: var(--bili-bg) !important;
+            color: var(--bili-fg) !important;
+            box-shadow: var(--bili-panel-shadow) !important;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        #bili-result {
+            background-color: var(--bili-bg) !important;
+            color: var(--bili-fg) !important;
+            border: 1px solid var(--bili-border) !important;
+            border-radius: 4px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+        #bili-room-id, #bili-title, #server-addr, #stream-code {
+            background: var(--bili-input-bg) !important;
+            color: var(--bili-input-fg) !important;
+            border: 1px solid var(--bili-input-border) !important;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        #bili-area-group, #bili-area {
+            background: var(--bili-input-bg) !important;
+            color: var(--bili-input-fg) !important;
+            border: 1px solid var(--bili-input-border) !important;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        .bili-important-tip {
+            background-color: var(--bili-tip-bg) !important;
+            color: var(--bili-tip-fg) !important;
+            border-left: 4px solid var(--bili-tip-border) !important;
+            border-radius: 4px;
+            margin-top: 8px;
+            padding: 8px;
+        }
+        .bili-tip-yellow {
+            background: var(--bili-tip-yellow-bg);
+            border-left: 4px solid var(--bili-tip-yellow-border);
+            color: var(--bili-tip-yellow-fg);
+            border-radius: 4px;
+            margin-top: 8px;
+            padding: 8px;
+        }
+        .bili-tip-green {
+            background: var(--bili-tip-green-bg);
+            border-left: 4px solid var(--bili-tip-green-border);
+            color: var(--bili-tip-green-fg);
+            border-radius: 4px;
+            margin-top: 8px;
+            padding: 8px;
+        }
+        .bili-btn-main {
+            background: var(--bili-btn-main);
+            color: var(--bili-btn-text);
+            border: none;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s, opacity 0.3s;
+        }
+        .bili-btn-main:hover:not(:disabled) {
+            background: var(--bili-btn-main-hover);
+        }
+        .bili-btn-main:disabled {
+            background: var(--bili-btn-main-disabled);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .bili-btn-stop {
+            background: var(--bili-btn-stop);
+            color: var(--bili-btn-text);
+            border: none;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s, opacity 0.3s;
+        }
+        .bili-btn-stop:hover:not(:disabled) {
+            background: var(--bili-btn-stop-hover);
+        }
+        .bili-btn-stop:disabled {
+            background: var(--bili-btn-stop-disabled);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .bili-title {
+            color: var(--bili-title-color);
+            font-size: 18px;
+            margin: 0;
+        }
+        .bili-label {
+            color: var(--bili-label-color);
+            font-size: 14px;
+        }
+        .bili-copy-btn {
+            margin-left: 5px;
+            background: var(--bili-btn-main);
+            color: var(--bili-btn-text);
+            border: none;
+            border-radius: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .bili-copy-btn:disabled {
+            background: var(--bili-btn-main-disabled);
+            cursor: not-allowed;
+        }
+        .bili-copy-btn:hover:not(:disabled) {
+            background: var(--bili-btn-main-hover);
+        }
+        .bili-message {
+            color: var(--bili-fg);
+            font-size: 15px;
+            margin: 0;
+        }
+        .bili-message-error {
+            color: red;
+        }
+        `;
+        document.head.appendChild(style);
+    }
+
     // 全局变量
     let roomId = null; // 当前房间ID
     let csrf = null; // CSRF令牌
@@ -70,6 +260,7 @@
     // 初始化入口
     function init() {
         try {
+            insertGlobalStyle(); // 插入全局样式
             removeExistingComponents(); // 清理旧组件
             createUI(); // 创建UI
             restoreLiveState(); // 恢复直播状态
@@ -109,12 +300,7 @@
             top: 70px;
             right: 10px;
             width: 300px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             z-index: 10000;
-            padding: 15px;
-            font-family: "Microsoft YaHei", sans-serif;
             display: none;
         `;
 
@@ -151,7 +337,7 @@
         // 标题
         const title = document.createElement('h2');
         title.textContent = 'B站推流码获取工具';
-        title.style.cssText = 'margin: 0; color: #fb7299; font-size: 18px;';
+        title.className = 'bili-title';
 
         // 亮暗模式切换按钮
         const modeBtn = document.createElement('button');
@@ -195,55 +381,13 @@
 
     // 亮暗模式应用函数
     function applyColorMode(isDark) {
-        const panel = document.getElementById('bili-stream-code-panel');
-        const floatBtn = document.getElementById('bili-stream-float-button');
-        if (panel) {
-            panel.style.backgroundColor = isDark ? '#232324' : '#fff';
-            panel.style.color = isDark ? '#eee' : '#222';
-            panel.style.boxShadow = isDark ? '0 2px 10px rgba(0,0,0,0.6)' : '0 2px 10px rgba(0,0,0,0.1)';
+        // 只切换 class，不再手动设置 style
+        const root = document.documentElement;
+        if (isDark) {
+            root.classList.add('bili-dark-mode');
+        } else {
+            root.classList.remove('bili-dark-mode');
         }
-        if (floatBtn) {
-            floatBtn.style.backgroundColor = '#fb7299';
-        }
-        // 结果区
-        const result = document.getElementById('bili-result');
-        if (result) {
-            result.style.backgroundColor = isDark ? '#232324' : '#f9f9f9';
-            result.style.color = isDark ? '#eee' : '#222';
-            result.style.borderColor = isDark ? '#444' : '#eee';
-        }
-        // 输入框等
-        ['bili-room-id','bili-title'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.style.background = isDark ? '#18181a' : '#fff';
-                el.style.color = isDark ? '#eee' : '#222';
-                el.style.borderColor = isDark ? '#444' : '#ddd';
-            }
-        });
-        ['bili-area-group','bili-area'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.style.background = isDark ? '#18181a' : '#fff';
-                el.style.color = isDark ? '#eee' : '#222';
-                el.style.borderColor = isDark ? '#444' : '#ddd';
-            }
-        });
-        // 新增：推流信息区的输入框（服务器地址、推流码）
-        ['server-addr','stream-code'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.style.background = isDark ? '#18181a' : '#fff';
-                el.style.color = isDark ? '#eee' : '#222';
-                el.style.borderColor = isDark ? '#444' : '#ddd';
-            }
-        });
-        // 重要提示区
-        document.querySelectorAll('.bili-important-tip').forEach(el => {
-            el.style.backgroundColor = isDark ? '#2d2326' : '#fef0f1';
-            el.style.color = isDark ? '#ffb6c1' : '#d92b46';
-            el.style.borderLeft = isDark ? '4px solid #fb7299' : '4px solid #fb7299';
-        });
     }
 
     // 创建面板表单
@@ -270,10 +414,9 @@
     function createRoomIdInput() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; flex-direction: column; gap: 5px;';
-
         const label = document.createElement('label');
         label.textContent = '房间ID (Room ID):';
-        label.style.cssText = 'font-size: 14px; color: #666;';
+        label.className = 'bili-label';
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -295,10 +438,9 @@
     function createAreaSelection() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; flex-direction: column; gap: 5px;';
-
         const label = document.createElement('label');
         label.textContent = '直播分区:';
-        label.style.cssText = 'font-size: 14px; color: #666;';
+        label.className = 'bili-label';
 
         // 加载指示器
         const loading = document.createElement('div');
@@ -447,7 +589,7 @@
 
         const label = document.createElement('label');
         label.textContent = '直播标题:';
-        label.style.cssText = 'font-size: 14px; color: #666;';
+        label.className = 'bili-label';
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -473,51 +615,16 @@
         // 开始直播按钮
         startLiveButton = document.createElement('button');
         startLiveButton.textContent = '获取推流码并开始直播';
-        startLiveButton.style.cssText = `
-            flex: 1;
-            background-color: #fb7299;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        `;
-        startLiveButton.onmouseover = function() { this.style.backgroundColor = '#fc8bab'; };
-        startLiveButton.onmouseout = function() { this.style.backgroundColor = '#fb7299'; };
+        startLiveButton.className = 'bili-btn-main';
+        startLiveButton.style.flex = '1';
         startLiveButton.onclick = startLive;
 
         // 结束直播按钮
         stopLiveButton = document.createElement('button');
         stopLiveButton.textContent = '结束直播';
-        stopLiveButton.style.cssText = `
-            flex: 1;
-            background-color: #999;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-            opacity: 0.5;
-        `;
+        stopLiveButton.className = 'bili-btn-stop';
+        stopLiveButton.style.flex = '1';
         stopLiveButton.disabled = true;
-        stopLiveButton.onmouseover = function() {
-            if (!this.disabled) {
-                this.style.backgroundColor = '#d9363e';
-            } else {
-                this.style.backgroundColor = '#999';
-            }
-        };
-        stopLiveButton.onmouseout = function() {
-            if (!this.disabled) {
-                this.style.backgroundColor = '#ff4b4b';
-            } else {
-                this.style.backgroundColor = '#999';
-            }
-        };
         stopLiveButton.onclick = stopLive;
 
         container.appendChild(startLiveButton);
@@ -831,20 +938,20 @@
 
         const resultHTML = `
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <h3 style="margin: 0; font-size: 16px; color: #fb7299;">推流信息 (进行中)</h3>
+                <h3 class="bili-title" style="font-size: 16px;">推流信息 (进行中)</h3>
                 <div>
                     <p style="margin: 0; font-weight: bold;">服务器地址:</p>
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <input id="server-addr" readonly value="${rtmpAddr}" title="${rtmpAddr}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
-                        <button id="copy-addr" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
+                        <input id="server-addr" readonly value="${rtmpAddr}" title="${rtmpAddr}" />
+                        <button id="copy-addr" class="bili-copy-btn">复制</button>
                     </div>
                     <p style="margin: 0; font-weight: bold;">推流码:</p>
                     <div style="display: flex; align-items: center;">
-                        <input id="stream-code" readonly value="${rtmpCode}" title="${rtmpCode}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
-                        <button id="copy-code" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
+                        <input id="stream-code" readonly value="${rtmpCode}" title="${rtmpCode}" />
+                        <button id="copy-code" class="bili-copy-btn">复制</button>
                     </div>
                 </div>
-                <div class="bili-important-tip" style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
+                <div class="bili-important-tip">
                     <p style="margin: 0; font-weight: bold;">重要提示:</p>
                     <p style="margin: 3px 0 0; font-size: 13px;">1. 长时间无信号会自动关闭直播</p>
                     <p style="margin: 3px 0 0; font-size: 13px;">2. 推流码如果变动会有提示</p>
@@ -981,9 +1088,9 @@
         const prevCode = GM_getValue('bili_prev_rtmp_code');
         if (prevAddr && prevCode) {
             if (prevAddr !== rtmpAddr || prevCode !== rtmpCode) {
-                changeTip = `<div style=\"margin-top:8px;padding:8px;background:#fffbe6;border-left:4px solid #faad14;border-radius:4px;\"><span style=\"color:#faad14;font-weight:bold;\">注意：</span>本次推流信息与上次不同，请确认已更新到OBS等推流软件！</div>`;
+                changeTip = `<div class=\"bili-tip-yellow\"><span style=\"font-weight:bold;\">注意：</span>本次推流信息与上次不同，请确认已更新到OBS等推流软件！</div>`;
             } else {
-                changeTip = `<div style=\"margin-top:8px;padding:8px;background:#e6ffed;border-left:4px solid #52c41a;border-radius:4px;\"><span style=\"color:#389e0d;font-weight:bold;\">推流信息没有变动 🎉🎉</span></div>`;
+                changeTip = `<div class=\"bili-tip-green\"><span style=\"font-weight:bold;\">推流信息没有变动 🎉🎉</span></div>`;
             }
         }
         // 更新本地上次推流信息为本次
@@ -993,21 +1100,21 @@
         // 显示推流信息
         const resultHTML = `
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <h3 style="margin: 0; font-size: 16px; color: #fb7299;">推流信息</h3>
+                <h3 class="bili-title" style="font-size: 16px;">推流信息</h3>
                 <div>
                     <p style="margin: 0; font-weight: bold;">服务器地址:</p>
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <input id="server-addr" readonly value="${rtmpAddr}" title="${rtmpAddr}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
-                        <button id="copy-addr" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
+                        <input id="server-addr" readonly value="${rtmpAddr}" title="${rtmpAddr}" />
+                        <button id="copy-addr" class="bili-copy-btn">复制</button>
                     </div>
                     <p style="margin: 0; font-weight: bold;">推流码:</p>
                     <div style="display: flex; align-items: center;">
-                        <input id="stream-code" readonly value="${rtmpCode}" title="${rtmpCode}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
-                        <button id="copy-code" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
+                        <input id="stream-code" readonly value="${rtmpCode}" title="${rtmpCode}" />
+                        <button id="copy-code" class="bili-copy-btn">复制</button>
                     </div>
                 </div>
                 ${changeTip}
-                <div class="bili-important-tip" style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
+                <div class="bili-important-tip">
                     <p style="margin: 0; font-weight: bold;">重要提示:</p>
                     <p style="margin: 3px 0 0; font-size: 13px;">1. 长时间无信号会自动关闭直播</p>
                     <p style="margin: 3px 0 0; font-size: 13px;">2. 推流码如果变动会有提示</p>
@@ -1135,7 +1242,7 @@
     function showMessage(message, isError = false) {
         const resultArea = document.getElementById('bili-result');
         if (resultArea) {
-            resultArea.innerHTML = `<p style="color: ${isError ? 'red' : '#333'}">${message}</p>`;
+            resultArea.innerHTML = `<p class="bili-message${isError ? ' bili-message-error' : ''}">${message}</p>`;
             resultArea.style.display = 'block';
         }
 
@@ -1159,11 +1266,11 @@
         const oldText = btn.textContent;
         btn.textContent = '✅';
         btn.disabled = true;
-        btn.style.backgroundColor = '#bfbfbf';
+        btn.classList.add('bili-copy-btn');
         setTimeout(() => {
             btn.textContent = oldText;
             btn.disabled = false;
-            btn.style.backgroundColor = '#fb7299';
+            btn.classList.add('bili-copy-btn');
         }, 2000);
     }
 
