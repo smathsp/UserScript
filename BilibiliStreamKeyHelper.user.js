@@ -4,7 +4,7 @@
 // @version      1
 // @description  获取第三方推流码
 // @author       smathsp
-// @license      MIT
+// @license      GPL-3.0
 // @match        *://*.bilibili.com/*
 // @icon         https://www.bilibili.com/favicon.ico
 // @grant        GM_setValue
@@ -23,12 +23,12 @@
     'use strict';
 
     // 全局变量
-    let roomId = null;
-    let csrf = null;
-    let startLiveButton = null;
-    let stopLiveButton = null;
-    let isLiveStarted = GM_getValue('isLiveStarted', false);
-    let streamInfo = GM_getValue('streamInfo', null);
+    let roomId = null; // 当前房间ID
+    let csrf = null; // CSRF令牌
+    let startLiveButton = null; // “开始直播”按钮引用
+    let stopLiveButton = null; // “结束直播”按钮引用
+    let isLiveStarted = GM_getValue('isLiveStarted', false); // 直播状态
+    let streamInfo = GM_getValue('streamInfo', null); // 推流信息缓存
 
     // 请求头
     const headers = {
@@ -40,7 +40,7 @@
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     };
 
-    // 开始直播数据
+    // 开始直播数据模板
     const startData = {
         'room_id': '',
         'platform': 'android_link',
@@ -50,7 +50,7 @@
         'csrf': '',
     };
 
-    // 停止直播数据
+    // 停止直播数据模板
     const stopData = {
         'room_id': '',
         'platform': 'android_link',
@@ -58,7 +58,7 @@
         'csrf': '',
     };
 
-    // 修改直播标题数据
+    // 修改直播标题数据模板
     const titleData = {
         'room_id': '',
         'platform': 'android_link',
@@ -67,23 +67,13 @@
         'csrf': '',
     };
 
-    // 初始化
+    // 初始化入口
     function init() {
         try {
-            // 清理可能存在的旧组件
-            removeExistingComponents();
-            
-            // 创建UI
-            createUI();
-            
-            // 绑定键盘快捷键
-            setupKeyboardShortcuts();
-            
-            // 恢复直播状态
-            restoreLiveState();
-            
-            // 设置定期检查
-            setInterval(checkFloatButton, 5000);
+            removeExistingComponents(); // 清理旧组件
+            createUI(); // 创建UI
+            restoreLiveState(); // 恢复直播状态
+            setInterval(checkFloatButton, 5000); // 定期检查浮动按钮
         } catch (error) {
             console.error("B站推流码获取工具初始化失败:", error);
         }
@@ -1082,41 +1072,28 @@
         }, 2000);
     }
 
-    // 设置键盘快捷键
-    function setupKeyboardShortcuts() {
-        document.addEventListener('keydown', function(e) {
-            // Alt+Shift+B 快捷键显示面板
-            if (e.altKey && e.shiftKey && (e.key === 'B' || e.key === 'b')) {
-                e.preventDefault();
-                togglePanel();
-            }
-        });
-    }
-
     // 页面导航事件监听
     window.addEventListener('popstate', init);
     window.addEventListener('hashchange', init);
     
-    // 监听页面可见性变化
+    // 监听页面可见性变化，页面可见时检查浮动按钮
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') {
-            checkFloatButton(); // 页面变为可见时检查浮动按钮
+            checkFloatButton();
         }
     });
     
-    // 使用MutationObserver监听DOM变化
+    // 使用MutationObserver监听DOM变化，动态检查浮动按钮
     const observer = new MutationObserver(function() {
         checkFloatButton();
     });
-    
-    // 开始观察
     observer.observe(document.body, {
         childList: true,
         subtree: true
     });
     
     // 多次尝试初始化，确保在各种情况下都能正常加载
-    setTimeout(init, 500); // 快速初始化
-    setTimeout(checkFloatButton, 2000); // 额外检查
-    setTimeout(checkFloatButton, 5000); // 延迟检查
+    setTimeout(init, 500);
+    setTimeout(checkFloatButton, 2000);
+    setTimeout(checkFloatButton, 5000);
 })();
