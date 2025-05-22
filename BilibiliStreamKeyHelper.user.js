@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         B站推流码获取工具
+// @namespace    https://github.com/smathsp
 // @version      1
 // @description  获取第三方推流码
 // @author       smathsp
+// @license      MIT
 // @match        *://*.bilibili.com/*
 // @icon         https://www.bilibili.com/favicon.ico
 // @grant        GM_setValue
