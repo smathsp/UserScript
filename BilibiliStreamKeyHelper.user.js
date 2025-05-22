@@ -78,12 +78,12 @@
             console.error("B站推流码获取工具初始化失败:", error);
         }
     }
-    
+
     // 移除已存在的组件
     function removeExistingComponents() {
         const existingPanel = document.getElementById('bili-stream-code-panel');
         if (existingPanel) existingPanel.remove();
-        
+
         const existingButton = document.getElementById('bili-stream-float-button');
         if (existingButton) existingButton.remove();
     }
@@ -92,14 +92,14 @@
     function createUI() {
         // 创建主面板
         const panel = createPanel();
-        
+
         // 创建浮动按钮
         createFloatButton();
-        
+
         // 自动填充房间ID
         setTimeout(autoFillRoomId, 300);
     }
-    
+
     // 创建面板
     function createPanel() {
         const panel = document.createElement('div');
@@ -117,15 +117,15 @@
             font-family: "Microsoft YaHei", sans-serif;
             display: none;
         `;
-        
+
         // 头部区域
         const header = createPanelHeader();
         panel.appendChild(header);
-        
+
         // 表单区域
         const form = createPanelForm();
         panel.appendChild(form);
-        
+
         // 结果区域
         const resultArea = document.createElement('div');
         resultArea.id = 'bili-result';
@@ -138,21 +138,21 @@
             display: none;
         `;
         panel.appendChild(resultArea);
-        
+
         document.body.appendChild(panel);
         return panel;
     }
-    
+
     // 创建面板头部
     function createPanelHeader() {
         const header = document.createElement('div');
         header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
-        
+
         // 标题
         const title = document.createElement('h2');
         title.textContent = 'B站推流码获取工具';
         title.style.cssText = 'margin: 0; color: #fb7299; font-size: 18px;';
-        
+
         // 亮暗模式切换按钮
         const modeBtn = document.createElement('button');
         modeBtn.id = 'bili-mode-toggle';
@@ -173,7 +173,7 @@
         };
         // 首次渲染时应用模式
         setTimeout(() => applyColorMode(isDarkMode), 0);
-        
+
         // 关闭按钮
         const closeButton = document.createElement('button');
         closeButton.innerHTML = '<svg viewBox="0 0 1024 1024" width="16" height="16"><path d="M512 421.49 331.09 240.58c-24.74-24.74-64.54-24.71-89.28 0.03-24.74 24.74-24.72 64.54 0.03 89.28L422.75 510.8 241.84 691.71c-24.74 24.74-24.72 64.54 0.03 89.33 24.74 24.74 64.54 24.71 89.28-0.03L512 600.1l180.91 180.91c24.74 24.74 64.54 24.71 89.28-0.03 24.74-24.74 24.72-64.54-0.03-89.28L601.25 510.8 782.16 329.89c24.74-24.74 24.72-64.54-0.03-89.33-24.74-24.74-64.54-24.71-89.28 0.03L512 421.49z" fill="#888888"></path></svg>';
@@ -181,13 +181,13 @@
         closeButton.onclick = () => {
             document.getElementById('bili-stream-code-panel').style.display = 'none';
         };
-        
+
         // 头部右侧按钮组
         const rightBtns = document.createElement('div');
         rightBtns.style.cssText = 'display: flex; align-items: center; gap: 4px;';
         rightBtns.appendChild(modeBtn);
         rightBtns.appendChild(closeButton);
-        
+
         header.appendChild(title);
         header.appendChild(rightBtns);
         return header;
@@ -229,6 +229,15 @@
                 el.style.borderColor = isDark ? '#444' : '#ddd';
             }
         });
+        // 新增：推流信息区的输入框（服务器地址、推流码）
+        ['server-addr','stream-code'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.background = isDark ? '#18181a' : '#fff';
+                el.style.color = isDark ? '#eee' : '#222';
+                el.style.borderColor = isDark ? '#444' : '#ddd';
+            }
+        });
         // 重要提示区
         document.querySelectorAll('.bili-important-tip').forEach(el => {
             el.style.backgroundColor = isDark ? '#2d2326' : '#fef0f1';
@@ -241,31 +250,31 @@
     function createPanelForm() {
         const form = document.createElement('div');
         form.style.cssText = 'display: flex; flex-direction: column; gap: 10px;';
-        
+
         // 房间ID输入
         form.appendChild(createRoomIdInput());
-        
+
         // 分区选择
         form.appendChild(createAreaSelection());
-        
+
         // 标题输入
         form.appendChild(createTitleInput());
-        
+
         // 按钮组
         form.appendChild(createButtonGroup());
-        
+
         return form;
     }
-    
+
     // 创建房间ID输入
     function createRoomIdInput() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; flex-direction: column; gap: 5px;';
-        
+
         const label = document.createElement('label');
         label.textContent = '房间ID (Room ID):';
         label.style.cssText = 'font-size: 14px; color: #666;';
-        
+
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'bili-room-id';
@@ -275,28 +284,28 @@
         input.addEventListener('input', function() {
             GM_setValue('bili_last_roomid', input.value.trim());
         });
-        
+
         container.appendChild(label);
         container.appendChild(input);
-        
+
         return container;
     }
-    
+
     // 创建分区选择
     function createAreaSelection() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; flex-direction: column; gap: 5px;';
-        
+
         const label = document.createElement('label');
         label.textContent = '直播分区:';
         label.style.cssText = 'font-size: 14px; color: #666;';
-        
+
         // 加载指示器
         const loading = document.createElement('div');
         loading.id = 'bili-area-loading';
         loading.textContent = '正在加载分区列表...';
         loading.style.cssText = 'padding: 8px; color: #666; font-size: 14px; text-align: center; cursor: pointer;';
-        
+
         // 分区组选择器
         const groupSelect = document.createElement('select');
         groupSelect.id = 'bili-area-group';
@@ -309,7 +318,7 @@
             GM_setValue('bili_last_groupid', groupSelect.value);
             refreshAreaOptions(areaList, Number(selectedIndex));
         });
-        
+
         // 子分区选择器
         const areaSelect = document.createElement('select');
         areaSelect.id = 'bili-area';
@@ -320,12 +329,12 @@
             // 同步保存大类id，保证切换子分区时也能恢复
             GM_setValue('bili_last_groupid', groupSelect.value);
         });
-        
+
         container.appendChild(label);
         container.appendChild(loading);
         container.appendChild(groupSelect);
         container.appendChild(areaSelect);
-        
+
         // 分区数据加载与联动
         function refreshAreaOptions(areaList, groupIdx = 0) {
             groupSelect.innerHTML = '';
@@ -430,16 +439,16 @@
 
         return container;
     }
-    
+
     // 创建标题输入
     function createTitleInput() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; flex-direction: column; gap: 5px;';
-        
+
         const label = document.createElement('label');
         label.textContent = '直播标题:';
         label.style.cssText = 'font-size: 14px; color: #666;';
-        
+
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'bili-title';
@@ -449,18 +458,18 @@
         input.addEventListener('input', function() {
             GM_setValue('bili_last_title', input.value.trim());
         });
-        
+
         container.appendChild(label);
         container.appendChild(input);
-        
+
         return container;
     }
-    
+
     // 创建按钮组
     function createButtonGroup() {
         const container = document.createElement('div');
         container.style.cssText = 'display: flex; gap: 10px; margin-top: 10px;';
-        
+
         // 开始直播按钮
         startLiveButton = document.createElement('button');
         startLiveButton.textContent = '获取推流码并开始直播';
@@ -478,7 +487,7 @@
         startLiveButton.onmouseover = function() { this.style.backgroundColor = '#fc8bab'; };
         startLiveButton.onmouseout = function() { this.style.backgroundColor = '#fb7299'; };
         startLiveButton.onclick = startLive;
-        
+
         // 结束直播按钮
         stopLiveButton = document.createElement('button');
         stopLiveButton.textContent = '结束直播';
@@ -510,13 +519,13 @@
             }
         };
         stopLiveButton.onclick = stopLive;
-        
+
         container.appendChild(startLiveButton);
         container.appendChild(stopLiveButton);
-        
+
         return container;
     }
-    
+
     // 创建浮动按钮
     function createFloatButton() {
         const button = document.createElement('div');
@@ -541,7 +550,7 @@
         button.onmouseover = function() { this.style.transform = 'scale(1.1)'; };
         button.onmouseout = function() { this.style.transform = 'scale(1)'; };
         button.onclick = togglePanel;
-        
+
         document.body.appendChild(button);
         return button;
     }
@@ -560,7 +569,7 @@
             panel.style.display = panel.style.display === 'none' || !panel.style.display ? 'block' : 'none';
         }
     }
-    
+
     // 检查浮动按钮
     function checkFloatButton() {
         if (!document.getElementById('bili-stream-float-button')) {
@@ -576,7 +585,7 @@
             updateAreaSelectors(cachedList);
             return;
         }
-        
+
         // 从API获取
         GM_xmlhttpRequest({
             method: "GET",
@@ -602,7 +611,7 @@
             }
         });
     }
-    
+
     // 显示分区加载错误信息
     function showAreaLoadError() {
         const loading = document.getElementById('bili-area-loading');
@@ -610,7 +619,7 @@
             loading.textContent = '无法加载分区列表，请稍后刷新重试';
             loading.style.color = '#ff4b4b';
         }
-        
+
         // 显示通知
         GM_notification({
             text: '无法加载直播分区列表，请检查网络连接或登录状态',
@@ -618,7 +627,7 @@
             timeout: 5000
         });
     }
-    
+
     // 更新分区选择器
     function updateAreaSelectors(areaList) {
         const loading = document.getElementById('bili-area-loading');
@@ -626,18 +635,18 @@
         const areaSelect = document.getElementById('bili-area');
         // 防止 loading 取不到时报错
         if (!loading || !groupSelect || !areaSelect) return;
-        
+
         // 隐藏加载提示
         loading.style.display = 'none';
-        
+
         // 显示选择器
         groupSelect.style.display = 'block';
         areaSelect.style.display = 'block';
-        
+
         // 清空选择器
         groupSelect.innerHTML = '';
         areaSelect.innerHTML = '';
-        
+
         // 添加分区大类
         areaList.forEach((group, index) => {
             const option = document.createElement('option');
@@ -646,7 +655,7 @@
             option.dataset.index = index;
             groupSelect.appendChild(option);
         });
-        
+
         // 默认显示第一个分区大类的子分区
         if (areaList.length > 0 && areaList[0].list) {
             areaList[0].list.forEach(area => {
@@ -656,15 +665,15 @@
                 areaSelect.appendChild(option);
             });
         }
-        
+
         // 分区大类变更事件
         groupSelect.addEventListener('change', function() {
             const selectedIndex = this.options[this.selectedIndex].dataset.index;
             const selectedGroup = areaList[selectedIndex];
-            
+
             // 清空子分区
             areaSelect.innerHTML = '';
-            
+
             if (selectedGroup && selectedGroup.list) {
                 selectedGroup.list.forEach(area => {
                     const option = document.createElement('option');
@@ -675,28 +684,28 @@
             }
         });
     }
-    
+
     // 获取缓存的分区列表
     function getCachedAreaList() {
         const timeStamp = GM_getValue('bili_area_list_time');
         if (!timeStamp) return null;
-        
+
         const now = new Date().getTime();
         const oneDay = 24 * 60 * 60 * 1000;
-        
+
         // 超过一天则认为过期
         if (now - timeStamp > oneDay) return null;
-        
+
         const listStr = GM_getValue('bili_area_list');
         if (!listStr) return null;
-        
+
         try {
             return JSON.parse(listStr);
         } catch (e) {
             return null;
         }
     }
-    
+
     // 缓存分区列表
     function cacheAreaList(areaList) {
         GM_setValue('bili_area_list', JSON.stringify(areaList));
@@ -720,13 +729,13 @@
         } else {
             // 从网页中获取房间ID
             let foundRoomId = null;
-            
+
             // 尝试从URL获取
             const urlMatch = window.location.href.match(/live\.bilibili\.com\/(\d+)/);
             if (urlMatch && urlMatch[1]) {
                 foundRoomId = urlMatch[1];
             }
-            
+
             // 尝试从页面元素获取
             if (!foundRoomId) {
                 // 直播页面元素
@@ -741,7 +750,7 @@
                     }
                 }
             }
-            
+
             // 尝试从个人空间页面获取
             if (!foundRoomId && window.location.href.includes('space.bilibili.com')) {
                 // 从个人空间获取用户ID
@@ -751,7 +760,7 @@
                     GM_setValue('bili_user_mid', midMatch[1]);
                 }
             }
-            
+
             // 如果仍未找到且有历史记录，使用上次填写的房间ID
             if (!foundRoomId) {
                 const lastRoomId = GM_getValue('bili_last_roomid');
@@ -759,7 +768,7 @@
                     foundRoomId = lastRoomId;
                 }
             }
-            
+
             if (foundRoomId) {
                 document.getElementById('bili-room-id').value = foundRoomId;
                 roomId = foundRoomId;
@@ -811,7 +820,7 @@
             }, 500);
         }
     }
-    
+
     // 恢复推流信息
     function restoreStreamInfo() {
         if (!streamInfo) return;
@@ -819,7 +828,7 @@
         if (!resultArea) return;
         const rtmpAddr = streamInfo.rtmpAddr;
         const rtmpCode = streamInfo.rtmpCode;
-        
+
         const resultHTML = `
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <h3 style="margin: 0; font-size: 16px; color: #fb7299;">推流信息 (进行中)</h3>
@@ -842,7 +851,7 @@
                 </div>
             </div>
         `;
-        
+
         resultArea.innerHTML = resultHTML;
         resultArea.style.display = 'block';
         // 添加复制按钮事件
@@ -858,8 +867,11 @@
                 copyToClipboardWithButton(rtmpCode, copyCodeBtn);
             });
         }
+        // 新增：推流信息区插入后，重新应用颜色模式
+        const isDarkMode = GM_getValue('bili_dark_mode', false);
+        applyColorMode(isDarkMode);
     }
-    
+
     // 更新按钮状态（用于直播开始/结束）
     function updateButtonsForLive(isLive) {
         if (isLive) {
@@ -868,7 +880,7 @@
                 startLiveButton.disabled = true;
                 startLiveButton.style.opacity = '0.5';
             }
-            
+
             if (stopLiveButton) {
                 stopLiveButton.disabled = false;
                 stopLiveButton.style.opacity = '1';
@@ -880,7 +892,7 @@
                 startLiveButton.disabled = false;
                 startLiveButton.style.opacity = '1';
             }
-            
+
             if (stopLiveButton) {
                 stopLiveButton.disabled = true;
                 stopLiveButton.style.opacity = '0.5';
@@ -895,39 +907,39 @@
         roomId = document.getElementById('bili-room-id').value.trim();
         const areaId = document.getElementById('bili-area').value;
         const liveTitle = document.getElementById('bili-title').value.trim();
-        
+
         // 验证输入
         if (!roomId) {
             showMessage('请输入房间ID', true);
             return;
         }
-        
+
         if (!liveTitle) {
             showMessage('请输入直播标题', true);
             return;
         }
-        
+
         if (!csrf) {
             showMessage('无法获取CSRF令牌，请确保已登录B站', true);
             return;
         }
-        
+
         // 更新直播标题
         updateLiveTitle(roomId, liveTitle, (success) => {
             if (!success) {
                 showMessage('设置直播标题失败，请确认是否已登录或有权限修改此直播间', true);
                 return;
             }
-            
+
             // 设置请求参数
             startData.room_id = roomId;
             startData.csrf_token = csrf;
             startData.csrf = csrf;
             startData.area_v2 = areaId;
-            
+
             // 获取推流码
             showMessage('正在获取推流码...');
-            
+
             GM_xmlhttpRequest({
                 method: "POST",
                 url: "https://api.live.bilibili.com/room/v1/Room/startLive",
@@ -936,7 +948,7 @@
                 onload: function(response) {
                     try {
                         const result = JSON.parse(response.responseText);
-                        
+
                         if (result.code === 0) {
                             // 成功获取
                             handleStartLiveSuccess(result.data, liveTitle, areaId);
@@ -953,7 +965,7 @@
             });
         });
     }
-    
+
     // 处理开始直播成功
     function handleStartLiveSuccess(data, title, areaId) {
         const rtmpAddr = data.rtmp.addr;
@@ -1002,7 +1014,7 @@
                 </div>
             </div>
         `;
-        
+
         const resultArea = document.getElementById('bili-result');
         resultArea.innerHTML = resultHTML;
         resultArea.style.display = 'block';
@@ -1019,10 +1031,13 @@
                 copyToClipboardWithButton(rtmpCode, copyCodeBtn);
             });
         }
-        
+        // 新增：推流信息区插入后，重新应用颜色模式
+        const isDarkMode = GM_getValue('bili_dark_mode', false);
+        applyColorMode(isDarkMode);
+
         // 更新按钮状态
         updateButtonsForLive(true);
-        
+
         // 保存直播状态
         isLiveStarted = true;
         streamInfo = {
@@ -1032,10 +1047,10 @@
             areaId,
             title
         };
-        
+
         GM_setValue('isLiveStarted', true);
         GM_setValue('streamInfo', streamInfo);
-        
+
         // 显示通知
         GM_notification({
             text: '已成功获取推流码并开始直播',
@@ -1050,7 +1065,7 @@
         titleData.title = title;
         titleData.csrf_token = csrf;
         titleData.csrf = csrf;
-        
+
         GM_xmlhttpRequest({
             method: "POST",
             url: "https://api.live.bilibili.com/room/v1/Room/update",
@@ -1073,14 +1088,14 @@
     // 停止直播
     function stopLive() {
         if (!isLiveStarted) return;
-        
+
         if (!confirm('确定要结束直播吗？')) return;
-        
+
         // 设置请求参数
         stopData.room_id = roomId;
         stopData.csrf_token = csrf;
         stopData.csrf = csrf;
-        
+
         GM_xmlhttpRequest({
             method: "POST",
             url: "https://api.live.bilibili.com/room/v1/Room/stopLive",
@@ -1089,18 +1104,18 @@
             onload: function(response) {
                 try {
                     const result = JSON.parse(response.responseText);
-                    
+
                     if (result.code === 0) {
                         // 成功结束直播
                         showMessage('直播已成功结束');
-                        
+
                         // 更新按钮状态
                         updateButtonsForLive(false);
-                        
+
                         // 清除直播状态
                         isLiveStarted = false;
                         streamInfo = null;
-                        
+
                         GM_setValue('isLiveStarted', false);
                         GM_setValue('streamInfo', null);
                     } else {
@@ -1123,7 +1138,7 @@
             resultArea.innerHTML = `<p style="color: ${isError ? 'red' : '#333'}">${message}</p>`;
             resultArea.style.display = 'block';
         }
-        
+
         GM_notification({
             text: message,
             title: isError ? '错误' : 'B站推流码获取工具',
@@ -1155,14 +1170,14 @@
     // 页面导航事件监听
     window.addEventListener('popstate', init);
     window.addEventListener('hashchange', init);
-    
+
     // 监听页面可见性变化，页面可见时检查浮动按钮
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') {
             checkFloatButton();
         }
     });
-    
+
     // 使用MutationObserver监听DOM变化，动态检查浮动按钮
     const observer = new MutationObserver(function() {
         checkFloatButton();
@@ -1171,7 +1186,7 @@
         childList: true,
         subtree: true
     });
-    
+
     // 多次尝试初始化，确保在各种情况下都能正常加载
     setTimeout(init, 500);
     setTimeout(checkFloatButton, 2000);
