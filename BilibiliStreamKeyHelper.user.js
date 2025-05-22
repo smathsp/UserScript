@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.2
+// @version      1.3
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -153,6 +153,27 @@
         title.textContent = 'B站推流码获取工具';
         title.style.cssText = 'margin: 0; color: #fb7299; font-size: 18px;';
         
+        // 亮暗模式切换按钮
+        const modeBtn = document.createElement('button');
+        modeBtn.id = 'bili-mode-toggle';
+        modeBtn.style.cssText = 'width: 28px; height: 28px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 8px;';
+        // SVG 图标
+        const sunSVG = '<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="5" fill="#FFD600"/><g stroke="#FFD600" stroke-width="2"><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></g></svg>';
+        const moonSVG = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M21 12.79A9 9 0 0 1 12.21 3c-.55 0-.66.71-.19.93A7 7 0 1 0 20.07 12c.22.47-.38.74-.87.79z" fill="#888"/></svg>';
+        // 读取模式
+        let isDarkMode = GM_getValue('bili_dark_mode', false);
+        modeBtn.innerHTML = isDarkMode ? moonSVG : sunSVG;
+        modeBtn.title = isDarkMode ? '切换为亮色模式' : '切换为暗色模式';
+        modeBtn.onclick = function() {
+            isDarkMode = !isDarkMode;
+            GM_setValue('bili_dark_mode', isDarkMode);
+            modeBtn.innerHTML = isDarkMode ? moonSVG : sunSVG;
+            modeBtn.title = isDarkMode ? '切换为亮色模式' : '切换为暗色模式';
+            applyColorMode(isDarkMode);
+        };
+        // 首次渲染时应用模式
+        setTimeout(() => applyColorMode(isDarkMode), 0);
+        
         // 关闭按钮
         const closeButton = document.createElement('button');
         closeButton.innerHTML = '<svg viewBox="0 0 1024 1024" width="16" height="16"><path d="M512 421.49 331.09 240.58c-24.74-24.74-64.54-24.71-89.28 0.03-24.74 24.74-24.72 64.54 0.03 89.28L422.75 510.8 241.84 691.71c-24.74 24.74-24.72 64.54 0.03 89.33 24.74 24.74 64.54 24.71 89.28-0.03L512 600.1l180.91 180.91c24.74 24.74 64.54 24.71 89.28-0.03 24.74-24.74 24.72-64.54-0.03-89.28L601.25 510.8 782.16 329.89c24.74-24.74 24.72-64.54-0.03-89.33-24.74-24.74-64.54-24.71-89.28 0.03L512 421.49z" fill="#888888"></path></svg>';
@@ -161,11 +182,61 @@
             document.getElementById('bili-stream-code-panel').style.display = 'none';
         };
         
+        // 头部右侧按钮组
+        const rightBtns = document.createElement('div');
+        rightBtns.style.cssText = 'display: flex; align-items: center; gap: 4px;';
+        rightBtns.appendChild(modeBtn);
+        rightBtns.appendChild(closeButton);
+        
         header.appendChild(title);
-        header.appendChild(closeButton);
+        header.appendChild(rightBtns);
         return header;
     }
-    
+
+    // 亮暗模式应用函数
+    function applyColorMode(isDark) {
+        const panel = document.getElementById('bili-stream-code-panel');
+        const floatBtn = document.getElementById('bili-stream-float-button');
+        if (panel) {
+            panel.style.backgroundColor = isDark ? '#232324' : '#fff';
+            panel.style.color = isDark ? '#eee' : '#222';
+            panel.style.boxShadow = isDark ? '0 2px 10px rgba(0,0,0,0.6)' : '0 2px 10px rgba(0,0,0,0.1)';
+        }
+        if (floatBtn) {
+            floatBtn.style.backgroundColor = '#fb7299';
+        }
+        // 结果区
+        const result = document.getElementById('bili-result');
+        if (result) {
+            result.style.backgroundColor = isDark ? '#232324' : '#f9f9f9';
+            result.style.color = isDark ? '#eee' : '#222';
+            result.style.borderColor = isDark ? '#444' : '#eee';
+        }
+        // 输入框等
+        ['bili-room-id','bili-title'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.background = isDark ? '#18181a' : '#fff';
+                el.style.color = isDark ? '#eee' : '#222';
+                el.style.borderColor = isDark ? '#444' : '#ddd';
+            }
+        });
+        ['bili-area-group','bili-area'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.background = isDark ? '#18181a' : '#fff';
+                el.style.color = isDark ? '#eee' : '#222';
+                el.style.borderColor = isDark ? '#444' : '#ddd';
+            }
+        });
+        // 重要提示区
+        document.querySelectorAll('.bili-important-tip').forEach(el => {
+            el.style.backgroundColor = isDark ? '#2d2326' : '#fef0f1';
+            el.style.color = isDark ? '#ffb6c1' : '#d92b46';
+            el.style.borderLeft = isDark ? '4px solid #fb7299' : '4px solid #fb7299';
+        });
+    }
+
     // 创建面板表单
     function createPanelForm() {
         const form = document.createElement('div');
@@ -424,8 +495,20 @@
             opacity: 0.5;
         `;
         stopLiveButton.disabled = true;
-        stopLiveButton.onmouseover = function() { if (!this.disabled) this.style.backgroundColor = '#777'; };
-        stopLiveButton.onmouseout = function() { if (!this.disabled) this.style.backgroundColor = '#999'; };
+        stopLiveButton.onmouseover = function() {
+            if (!this.disabled) {
+                this.style.backgroundColor = '#d9363e';
+            } else {
+                this.style.backgroundColor = '#999';
+            }
+        };
+        stopLiveButton.onmouseout = function() {
+            if (!this.disabled) {
+                this.style.backgroundColor = '#ff4b4b';
+            } else {
+                this.style.backgroundColor = '#999';
+            }
+        };
         stopLiveButton.onclick = stopLive;
         
         container.appendChild(startLiveButton);
@@ -752,10 +835,10 @@
                         <button id="copy-code" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
                     </div>
                 </div>
-                <div style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
-                    <p style="margin: 0; color: #d92b46; font-weight: bold;\">重要提示:</p>
-                    <p style=\"margin: 3px 0 0; font-size: 13px;\">1. 长时间无信号会自动关闭直播</p>
-                    <p style=\"margin: 3px 0 0; font-size: 13px;\">2. 推流码如果变动会有提示</p>
+                <div class="bili-important-tip" style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
+                    <p style="margin: 0; font-weight: bold;">重要提示:</p>
+                    <p style="margin: 3px 0 0; font-size: 13px;">1. 长时间无信号会自动关闭直播</p>
+                    <p style="margin: 3px 0 0; font-size: 13px;">2. 推流码如果变动会有提示</p>
                 </div>
             </div>
         `;
@@ -897,25 +980,25 @@
 
         // 显示推流信息
         const resultHTML = `
-            <div style=\"display: flex; flex-direction: column; gap: 8px;\">
-                <h3 style=\"margin: 0; font-size: 16px; color: #fb7299;\">推流信息</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <h3 style="margin: 0; font-size: 16px; color: #fb7299;">推流信息</h3>
                 <div>
-                    <p style=\"margin: 0; font-weight: bold;\">服务器地址:</p>
-                    <div style=\"display: flex; align-items: center; margin-bottom: 8px;\">
-                        <input id=\"server-addr\" readonly value=\"${rtmpAddr}\" title=\"${rtmpAddr}\" style=\"flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;\" />
-                        <button id=\"copy-addr\" style=\"margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;\">复制</button>
+                    <p style="margin: 0; font-weight: bold;">服务器地址:</p>
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <input id="server-addr" readonly value="${rtmpAddr}" title="${rtmpAddr}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
+                        <button id="copy-addr" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
                     </div>
-                    <p style=\"margin: 0; font-weight: bold;\">推流码:</p>
-                    <div style=\"display: flex; align-items: center;\">
-                        <input id=\"stream-code\" readonly value=\"${rtmpCode}\" title=\"${rtmpCode}\" style=\"flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;\" />
-                        <button id=\"copy-code\" style=\"margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;\">复制</button>
+                    <p style="margin: 0; font-weight: bold;">推流码:</p>
+                    <div style="display: flex; align-items: center;">
+                        <input id="stream-code" readonly value="${rtmpCode}" title="${rtmpCode}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; overflow-x: auto; white-space: nowrap; background: #fff;" />
+                        <button id="copy-code" style="margin-left: 5px; background-color: #fb7299; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer;">复制</button>
                     </div>
                 </div>
                 ${changeTip}
-                <div style=\"margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;\">
-                    <p style=\"margin: 0; color: #d92b46; font-weight: bold;\">重要提示:</p>
-                    <p style=\"margin: 3px 0 0; font-size: 13px;\">1. 长时间无信号会自动关闭直播</p>
-                    <p style=\"margin: 3px 0 0; font-size: 13px;\">2. 推流码如果变动会有提示</p>
+                <div class="bili-important-tip" style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
+                    <p style="margin: 0; font-weight: bold;">重要提示:</p>
+                    <p style="margin: 3px 0 0; font-size: 13px;">1. 长时间无信号会自动关闭直播</p>
+                    <p style="margin: 3px 0 0; font-size: 13px;">2. 推流码如果变动会有提示</p>
                 </div>
             </div>
         `;
