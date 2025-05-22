@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.1
+// @version      1.2
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -718,12 +718,10 @@
             setTimeout(() => {
                 const panel = document.getElementById('bili-stream-code-panel');
                 if (panel) {
-                    // 显示面板
-                    panel.style.display = 'block';
-                    
+                    // 不再自动展开面板，只恢复按钮和推流信息
+                    // panel.style.display = 'block';
                     // 更新按钮状态
                     updateButtonsForLive(true);
-                    
                     // 恢复推流信息
                     restoreStreamInfo();
                 }
@@ -755,10 +753,9 @@
                     </div>
                 </div>
                 <div style="margin-top: 8px; padding: 8px; background-color: #fef0f1; border-radius: 4px; border-left: 4px solid #fb7299;">
-                    <p style="margin: 0; color: #d92b46; font-weight: bold;">重要提示:</p>
-                    <p style="margin: 3px 0 0; font-size: 13px;">1. 您的直播正在进行中</p>
-                    <p style="margin: 3px 0 0; font-size: 13px;">2. 点击"结束直播"按钮才会真正关闭直播</p>
-                    <p style="margin: 3px 0 0; font-size: 13px;">3. 推流码仅可使用一次，再次直播需重新获取</p>
+                    <p style="margin: 0; color: #d92b46; font-weight: bold;\">重要提示:</p>
+                    <p style=\"margin: 3px 0 0; font-size: 13px;\">1. 长时间无信号会自动关闭直播</p>
+                    <p style=\"margin: 3px 0 0; font-size: 13px;\">2. 推流码如果变动会有提示</p>
                 </div>
             </div>
         `;
