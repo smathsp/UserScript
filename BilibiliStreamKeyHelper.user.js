@@ -45,15 +45,15 @@
   const API_URL_STOP_LIVE =
     "https://api.live.bilibili.com/room/v1/Room/stopLive";
 
-  // 示例：将 GM_xmlhttpRequest Promise 化
+  // 将 GM_xmlhttpRequest Promise 化
   function gmRequest(options) {
     return new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
         ...options,
         onload: resolve,
-        onerror: reject, // GM_xmlhttpRequest 的 onerror 通常也传递 response 对象
-        ontimeout: reject, // 同样
-        onabort: reject, // 同样
+        onerror: reject,
+        ontimeout: reject,
+        onabort: reject,
       });
     });
   }
@@ -332,7 +332,6 @@
       removeExistingComponents(); // 清理旧组件
       createUI(); // 创建UI（只创建一次主面板）
       restoreLiveState(); // 恢复直播状态
-      // setInterval(checkFloatButton, 5000); // 定期检查浮动按钮 - REMOVED
     } catch (error) {
       console.error("B站推流码获取工具初始化失败:", error);
     }
@@ -341,7 +340,17 @@
   // 移除已存在的组件
   function removeExistingComponents() {
     const existingPanel = document.getElementById("bili-stream-code-panel");
-    if (existingPanel) existingPanel.remove();
+    if (existingPanel) {
+      // 清理事件监听器
+      if (existingPanel._clickOutsideHandler) {
+        document.removeEventListener(
+          "click",
+          existingPanel._clickOutsideHandler,
+          true
+        );
+      }
+      existingPanel.remove();
+    }
     const existingButton = document.getElementById("bili-stream-float-button");
     if (existingButton) existingButton.remove();
     // 清空按钮引用，防止旧引用干扰
@@ -366,13 +375,13 @@
     const panel = document.createElement("div");
     panel.id = "bili-stream-code-panel";
     panel.style.cssText = `
-            position: fixed;
-            top: 70px;
-            right: 10px;
-            width: 240px;
-            z-index: 10000;
-            display: none;
-        `;
+          position: fixed;
+          top: 70px;
+          right: 10px;
+          width: 240px;
+          z-index: 10000;
+          display: none;
+      `;
     // 头部区域
     const header = createPanelHeader();
     panel.appendChild(header);
@@ -383,17 +392,45 @@
     const resultArea = document.createElement("div");
     resultArea.id = "bili-result";
     resultArea.style.cssText = `
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            display: none;
-        `;
+          margin-top: 15px;
+          padding: 10px;
+          border: 1px solid #eee;
+          border-radius: 4px;
+          background-color: #f9f9f9;
+          display: none;
+      `;
     panel.appendChild(resultArea);
     document.body.appendChild(panel);
-    // 缓存常用元素引用
+
+    // 新增：设置点击外部隐藏面板
+    setupClickOutsideHandler(panel);
+
     return panel;
+  }
+
+  // 新增：设置点击外部隐藏面板的处理器
+  function setupClickOutsideHandler(panel) {
+    function handleClickOutside(event) {
+      // 只在面板可见时处理
+      if (panel.style.display === "none") return;
+
+      // 检查点击目标
+      const floatButton = document.getElementById("bili-stream-float-button");
+      const isClickInPanel = panel.contains(event.target);
+      const isClickOnFloatButton =
+        floatButton && floatButton.contains(event.target);
+
+      // 点击面板外且不是浮动按钮时隐藏面板
+      if (!isClickInPanel && !isClickOnFloatButton) {
+        panel.style.display = "none";
+      }
+    }
+
+    // 使用捕获阶段监听，确保在其他事件处理器之前执行
+    document.addEventListener("click", handleClickOutside, true);
+
+    // 存储处理器引用，便于清理
+    panel._clickOutsideHandler = handleClickOutside;
   }
 
   // 创建面板头部
@@ -1163,62 +1200,6 @@
       return;
     }
 
-    // 更新直播标题
-    // updateLiveTitle(roomId, liveTitle, (success) => { // Original callback structure
-    //   if (!success) {
-    //     showMessage(
-    //       "设置直播标题失败，请确认是否已登录或有权限修改此直播间",
-    //       true
-    //     );
-    //     return;
-    //   }
-
-    //   // 设置请求参数
-    //   startData.room_id = roomId;
-    //   startData.csrf_token = csrf;
-    //   startData.csrf = csrf;
-    //   startData.area_v2 = areaId;
-
-    //   // 获取推流码
-    //   showMessage("正在获取推流码...");
-
-    //   GM_xmlhttpRequest({
-    //     method: "POST",
-    //     url: API_URL_START_LIVE, // Replaced
-    //     headers: headers,
-    //     data: new URLSearchParams(startData).toString(),
-    //     onload: function (response) {
-    //       try {
-    //         const result = JSON.parse(response.responseText);
-
-    //         if (result.code === 0) {
-    //           // 成功获取
-    //           handleStartLiveSuccess(result.data, liveTitle, areaId);
-    //         } else {
-    //           console.error("Start live API error:", result); // Added
-    //           showMessage(
-    //             `获取推流码失败: ${result.message || "未知错误"}`,
-    //             true
-    //           );
-    //         }
-    //       } catch (error) {
-    //         console.error(
-    //           "Error parsing start live response:",
-    //           error,
-    //           "Response text:",
-    //           response.responseText
-    //         ); // Enhanced
-    //         showMessage("解析响应失败，请稍后重试", true);
-    //       }
-    //     },
-    //     onerror: function (response) {
-    //       // Changed 'error' to 'response' to match GM_xmlhttpRequest
-    //       console.error("Start live request error:", response); // Added
-    //       showMessage("网络请求失败，请检查网络连接", true);
-    //     },
-    //   });
-    // });
-
     try {
       const titleUpdated = await updateLiveTitle(roomId, liveTitle);
       if (!titleUpdated) {
@@ -1264,9 +1245,7 @@
         try {
           const parsedError = JSON.parse(errorResponse.responseText);
           errorMessage = `API错误: ${parsedError.message || "未知API错误"}`;
-        } catch (e) {
-          // Ignore if responseText is not JSON
-        }
+        } catch (e) {}
       } else if (errorResponse instanceof Error) {
         errorMessage = `请求错误: ${errorResponse.message}`;
       }
@@ -1369,41 +1348,10 @@
 
   // 更新直播标题
   async function updateLiveTitle(roomId, title) {
-    // Removed callback, make async
     titleData.room_id = roomId;
     titleData.title = title;
     titleData.csrf_token = csrf;
     titleData.csrf = csrf;
-
-    // GM_xmlhttpRequest({ // Original GM_xmlhttpRequest call
-    //   method: "POST",
-    //   url: API_URL_UPDATE_ROOM, // Replaced
-    //   headers: headers,
-    //   data: new URLSearchParams(titleData).toString(),
-    //   onload: function (response) {
-    //     try {
-    //       const result = JSON.parse(response.responseText);
-    //       if (result.code !== 0) {
-    //         // Added condition for logging
-    //         console.error("Update title API error:", result); // Added
-    //       }
-    //       callback(result.code === 0);
-    //     } catch (error) {
-    //       console.error(
-    //         "Error parsing update title response:",
-    //         error,
-    //         "Response text:",
-    //         response.responseText
-    //       ); // Enhanced
-    //       callback(false);
-    //     }
-    //   },
-    //   onerror: function (response) {
-    //     // Changed 'error' to 'response' to match GM_xmlhttpRequest
-    //     console.error("Update title request error:", response); // Added
-    //     callback(false);
-    //   },
-    // });
     try {
       const response = await gmRequest({
         method: "POST",
@@ -1424,7 +1372,6 @@
 
   // 停止直播
   async function stopLive() {
-    // Make stopLive async
     if (!isLiveStarted) return;
 
     if (!confirm("确定要结束直播吗？")) return;
@@ -1434,48 +1381,6 @@
     stopData.csrf_token = csrf;
     stopData.csrf = csrf;
 
-    // GM_xmlhttpRequest({ // Original GM_xmlhttpRequest call
-    //   method: "POST",
-    //   url: API_URL_STOP_LIVE, // Replaced
-    //   headers: headers,
-    //   data: new URLSearchParams(stopData).toString(),
-    //   onload: function (response) {
-    //     try {
-    //       const result = JSON.parse(response.responseText);
-
-    //       if (result.code === 0) {
-    //         // 成功结束直播
-    //         showMessage("直播已成功结束");
-
-    //         // 更新按钮状态
-    //         updateButtonsForLive(false);
-
-    //         // 清除直播状态
-    //         isLiveStarted = false;
-    //         streamInfo = null;
-
-    //         GM_setValue("isLiveStarted", false);
-    //         GM_setValue("streamInfo", null);
-    //       } else {
-    //         console.error("Stop live API error:", result); // Added
-    //         showMessage(`结束直播失败: ${result.message || "未知错误"}`, true);
-    //       }
-    //     } catch (error) {
-    //       console.error(
-    //         "Error parsing stop live response:",
-    //         error,
-    //         "Response text:",
-    //         response.responseText
-    //       ); // Enhanced
-    //       showMessage("解析响应失败，请稍后重试", true);
-    //     }
-    //   },
-    //   onerror: function (response) {
-    //     // Changed 'error' to 'response' to match GM_xmlhttpRequest
-    //     console.error("Stop live request error:", response); // Added
-    //     showMessage("网络请求失败，请检查网络连接", true);
-    //   },
-    // });
     try {
       const response = await gmRequest({
         method: "POST",
@@ -1509,9 +1414,7 @@
         try {
           const parsedError = JSON.parse(errorResponse.responseText);
           errorMessage = `API错误: ${parsedError.message || "未知API错误"}`;
-        } catch (e) {
-          // Ignore if responseText is not JSON
-        }
+        } catch (e) {}
       } else if (errorResponse instanceof Error) {
         errorMessage = `请求错误: ${errorResponse.message}`;
       }
