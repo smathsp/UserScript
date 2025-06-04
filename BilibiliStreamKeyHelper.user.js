@@ -131,8 +131,9 @@
             color: var(--bili-fg) !important;
             box-shadow: var(--bili-panel-shadow) !important;
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             font-family: "Microsoft YaHei", sans-serif;
+            max-width: 280px;
         }
         #bili-result {
             background-color: var(--bili-bg) !important;
@@ -147,16 +148,20 @@
             color: var(--bili-input-fg) !important;
             border: 1px solid var(--bili-input-border) !important;
             border-radius: 4px;
-            padding: 8px;
-            font-size: 14px;
+            padding: 6px 8px;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .bili-select {
             background: var(--bili-input-bg) !important;
             color: var(--bili-input-fg) !important;
             border: 1px solid var(--bili-input-border) !important;
             border-radius: 4px;
-            padding: 8px;
-            font-size: 14px;
+            padding: 6px 8px;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
         }
         #bili-room-id, #bili-title, #server-addr, #stream-code {
             background: var(--bili-input-bg) !important;
@@ -249,9 +254,11 @@
             color: var(--bili-btn-text);
             border: none;
             border-radius: 4px;
-            padding: 8px;
+            padding: 6px 8px;
             cursor: pointer;
             transition: background 0.3s;
+            font-size: 12px;
+            flex-shrink: 0;
         }
         .bili-copy-btn:disabled {
             background: var(--bili-btn-main-disabled);
@@ -362,7 +369,7 @@
             position: fixed;
             top: 70px;
             right: 10px;
-            width: 300px;
+            width: 240px;
             z-index: 10000;
             display: none;
         `;
@@ -397,7 +404,7 @@
 
     // 标题
     const title = document.createElement("h2");
-    title.textContent = "B站推流码获取工具";
+    title.textContent = "推流码获取";
     title.className = "bili-title";
 
     // 亮暗模式切换按钮
@@ -498,7 +505,7 @@
     container.style.cssText =
       "display: flex; flex-direction: column; gap: 5px;";
     const label = document.createElement("label");
-    label.textContent = "房间ID (Room ID):";
+    label.textContent = "房间ID:";
     label.className = "bili-label";
 
     const input = document.createElement("input");
