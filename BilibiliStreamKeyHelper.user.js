@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.5
+// @version      1.6
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -73,14 +73,14 @@
     style.id = "bili-stream-global-style";
     style.innerHTML = `
         :root {
-            --bili-bg: #fff;
+            --bili-bg: rgba(255, 255, 255, 0.8);
             --bili-fg: #222;
-            --bili-panel-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            --bili-border: #eee;
-            --bili-input-bg: #fff;
+            --bili-panel-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            --bili-border: rgba(238, 238, 238, 0.6);
+            --bili-input-bg: rgba(255, 255, 255, 0.9);
             --bili-input-fg: #222;
-            --bili-input-border: #ddd;
-            --bili-tip-bg: #fef0f1;
+            --bili-input-border: rgba(221, 221, 221, 0.8);
+            --bili-tip-bg: rgba(254, 240, 241, 0.9);
             --bili-tip-fg: #d92b46;
             --bili-tip-border: #fb7299;
             --bili-btn-main: #fb7299;
@@ -92,22 +92,22 @@
             --bili-btn-text: #fff;
             --bili-title-color: #fb7299;
             --bili-label-color: #666;
-            --bili-tip-yellow-bg: #fffbe6;
+            --bili-tip-yellow-bg: rgba(255, 251, 230, 0.9);
             --bili-tip-yellow-border: #faad14;
             --bili-tip-yellow-fg: #faad14;
-            --bili-tip-green-bg: #e6ffed;
+            --bili-tip-green-bg: rgba(230, 255, 237, 0.9);
             --bili-tip-green-border: #52c41a;
             --bili-tip-green-fg: #389e0d;
         }
         .bili-dark-mode {
-            --bili-bg: #232324;
+            --bili-bg: rgba(35, 35, 36, 0.8);
             --bili-fg: #eee;
-            --bili-panel-shadow: 0 2px 10px rgba(0,0,0,0.6);
-            --bili-border: #444;
-            --bili-input-bg: #18181a;
+            --bili-panel-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            --bili-border: rgba(68, 68, 68, 0.6);
+            --bili-input-bg: rgba(24, 24, 26, 0.9);
             --bili-input-fg: #eee;
-            --bili-input-border: #444;
-            --bili-tip-bg: #2d2326;
+            --bili-input-border: rgba(68, 68, 68, 0.8);
+            --bili-tip-bg: rgba(45, 35, 38, 0.9);
             --bili-tip-fg: #ffb6c1;
             --bili-tip-border: #fb7299;
             --bili-btn-main: #fb7299;
@@ -119,10 +119,10 @@
             --bili-btn-text: #fff;
             --bili-title-color: #fb7299;
             --bili-label-color: #aaa;
-            --bili-tip-yellow-bg: #3a2d1a;
+            --bili-tip-yellow-bg: rgba(58, 45, 26, 0.9);
             --bili-tip-yellow-border: #faad14;
             --bili-tip-yellow-fg: #ffd666;
-            --bili-tip-green-bg: #1e2b22;
+            --bili-tip-green-bg: rgba(30, 43, 34, 0.9);
             --bili-tip-green-border: #52c41a;
             --bili-tip-green-fg: #b7eb8f;
         }
@@ -130,18 +130,23 @@
             background-color: var(--bili-bg) !important;
             color: var(--bili-fg) !important;
             box-shadow: var(--bili-panel-shadow) !important;
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 12px;
             font-family: "Microsoft YaHei", sans-serif;
             max-width: 280px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--bili-border);
         }
         #bili-result {
             background-color: var(--bili-bg) !important;
             color: var(--bili-fg) !important;
             border: 1px solid var(--bili-border) !important;
-            border-radius: 4px;
+            border-radius: 8px;
             margin-top: 15px;
             padding: 10px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
         .bili-input {
             background: var(--bili-input-bg) !important;
@@ -183,25 +188,31 @@
             background-color: var(--bili-tip-bg) !important;
             color: var(--bili-tip-fg) !important;
             border-left: 4px solid var(--bili-tip-border) !important;
-            border-radius: 4px;
+            border-radius: 6px;
             margin-top: 8px;
             padding: 8px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .bili-tip-yellow {
             background: var(--bili-tip-yellow-bg);
             border-left: 4px solid var(--bili-tip-yellow-border);
             color: var(--bili-tip-yellow-fg);
-            border-radius: 4px;
+            border-radius: 6px;
             margin-top: 8px;
             padding: 8px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .bili-tip-green {
             background: var(--bili-tip-green-bg);
             border-left: 4px solid var(--bili-tip-green-border);
             color: var(--bili-tip-green-fg);
-            border-radius: 4px;
+            border-radius: 6px;
             margin-top: 8px;
             padding: 8px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
         }
         .bili-btn-main {
             background: var(--bili-btn-main);
@@ -240,10 +251,14 @@
             cursor: not-allowed;
         }
         .bili-title {
-            color: var(--bili-title-color);
+            color: var(--bili-title-color) !important;
             font-size: 18px;
             margin: 0;
         }
+        .bili-title:hover {
+          opacity: 0.8;
+          text-decoration: underline !important;
+      }
         .bili-label {
             color: var(--bili-label-color);
             font-size: 14px;
@@ -367,7 +382,6 @@
     }
     // 浮动按钮可重复创建（防止丢失）
     createFloatButton();
-    // 自动填充房间ID的逻辑已移至 createPanelForm
   }
 
   // 创建面板
@@ -439,10 +453,14 @@
     header.style.cssText =
       "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;";
 
-    // 标题
-    const title = document.createElement("h2");
+    // 标题 - 改为可点击的链接
+    const title = document.createElement("a");
     title.textContent = "推流码获取";
     title.className = "bili-title";
+    title.href = "https://github.com/smathsp/UserScript";
+    title.target = "_blank";
+    title.style.cssText = "text-decoration: none; cursor: pointer;";
+    title.title = "访问 GitHub 仓库";
 
     // 亮暗模式切换按钮
     const modeBtn = document.createElement("button");
@@ -516,11 +534,9 @@
             "Error during area list loading, or in autoFillRoomId:",
             error
           );
-          // Fallback if promise rejects
           setTimeout(autoFillRoomId, 300);
         });
     } else {
-      // Fallback if the promise wasn't attached
       console.warn(
         "loadAndBindAreaListPromise not found, falling back for autoFillRoomId."
       );
@@ -564,7 +580,7 @@
   // 创建分区选择
   function createAreaSelection() {
     const container = document.createElement("div");
-    container.id = "bili-area-selection-container"; // 新增ID，方便获取
+    container.id = "bili-area-selection-container";
     container.style.cssText =
       "display: flex; flex-direction: column; gap: 5px;";
     const label = document.createElement("label");
@@ -674,7 +690,6 @@
     // 加载分区数据
     function loadAndBindAreaList() {
       return new Promise(async (resolve, reject) => {
-        // Make the wrapping function async
         // 返回 Promise
         loading.style.display = "block";
         groupSelect.style.display = "none";
@@ -689,7 +704,6 @@
         }
         try {
           const response = await gmRequest({
-            // Use await with gmRequest
             method: "GET",
             url: API_URL_AREA_LIST,
             headers: headers,
@@ -705,7 +719,6 @@
             reject(new Error("Failed to load area list")); // 拒绝 Promise
           }
         } catch (errorResponse) {
-          // Catch errors from gmRequest
           console.error("Area list request error:", errorResponse);
           showAreaLoadError();
           reject(errorResponse); // 拒绝 Promise
@@ -818,8 +831,6 @@
       createFloatButton();
     }
   }
-
-  // 全局 loadAreaList 函数已移除，其功能由 createAreaSelection 内的 loadAndBindAreaList 处理
 
   // 显示分区加载错误信息
   function showAreaLoadError() {
@@ -1006,8 +1017,6 @@
       setTimeout(() => {
         const panel = document.getElementById("bili-stream-code-panel");
         if (panel) {
-          // 不再自动展开面板，只恢复按钮和推流信息
-          // panel.style.display = 'block';
           // 更新按钮状态
           updateButtonsForLive(true);
           // 恢复推流信息
@@ -1073,7 +1082,6 @@
     if (startLiveButton) {
       startLiveButton.disabled = isLive;
     }
-    // 只要 roomId 有效（非空字符串），就允许结束直播按钮可用
     if (stopLiveButton) {
       stopLiveButton.disabled = !(roomId && String(roomId).trim() !== "");
     }
@@ -1085,8 +1093,6 @@
       setTimeout(() => {
         const panel = document.getElementById("bili-stream-code-panel");
         if (panel) {
-          // 不再自动展开面板，只恢复按钮和推流信息
-          // panel.style.display = 'block';
           // 更新按钮状态
           updateButtonsForLive(true);
           // 恢复推流信息
@@ -1178,7 +1184,6 @@
 
   // 开始直播
   async function startLive() {
-    // Make startLive async
     // 获取输入值
     roomId = document.getElementById("bili-room-id").value.trim();
     const areaId = document.getElementById("bili-area").value;
