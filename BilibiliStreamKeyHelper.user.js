@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.6
+// @version      1.7
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -933,23 +933,6 @@
   }
 
   // 拆分 autoFillRoomId 内部逻辑
-  function getRoomIdFromUrl() {
-    const urlMatch = window.location.href.match(/live\.bilibili\.com\/(\d+)/);
-    return urlMatch && urlMatch[1] ? urlMatch[1] : null;
-  }
-  function getRoomIdFromElement() {
-    const roomElement = document.querySelector(".room-info-anchor-name");
-    if (roomElement) {
-      const href = roomElement.getAttribute("href");
-      if (href) {
-        const match = href.match(/\/(\d+)/);
-        if (match && match[1]) {
-          return match[1];
-        }
-      }
-    }
-    return null;
-  }
   function getRoomIdFromHistory() {
     return GM_getValue(STORAGE_KEYS.LAST_ROOM_ID);
   }
@@ -970,22 +953,11 @@
         document.getElementById("bili-title").value = streamInfo.title;
       }
     } else {
-      let foundRoomId = getRoomIdFromUrl() || getRoomIdFromElement();
-      if (!foundRoomId && window.location.href.includes("space.bilibili.com")) {
-        const midMatch = window.location.href.match(
-          /space\.bilibili\.com\/(\d+)/
-        );
-        if (midMatch && midMatch[1]) {
-          GM_setValue(STORAGE_KEYS.USER_MID, midMatch[1]);
-        }
-      }
-      if (!foundRoomId) {
-        foundRoomId = getRoomIdFromHistory();
-      }
+      // 仅使用历史记录获取房间ID，取消自动获取功能
+      const foundRoomId = getRoomIdFromHistory();
       if (foundRoomId) {
         document.getElementById("bili-room-id").value = foundRoomId;
         roomId = foundRoomId;
-        GM_setValue(STORAGE_KEYS.LAST_ROOM_ID, foundRoomId);
       } else if (lastRoomId) {
         document.getElementById("bili-room-id").value = lastRoomId;
         roomId = lastRoomId;
