@@ -316,7 +316,7 @@
   // 开始直播数据模板
   const startData = {
     room_id: "",
-    platform: "android_link",
+    platform: "pc_link", //感谢bilibili Z-Lake提供
     area_v2: "",
     backup_stream: "0",
     csrf_token: "",
@@ -326,7 +326,7 @@
   // 停止直播数据模板
   const stopData = {
     room_id: "",
-    platform: "android_link",
+    platform: "pc_link", //感谢bilibili Z-Lake提供
     csrf_token: "",
     csrf: "",
   };
@@ -334,7 +334,7 @@
   // 修改直播标题数据模板
   const titleData = {
     room_id: "",
-    platform: "android_link",
+    platform: "pc_link", //感谢bilibili Z-Lake提供
     title: "",
     csrf_token: "",
     csrf: "",
