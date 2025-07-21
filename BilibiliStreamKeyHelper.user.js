@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.7
+// @version      1.8
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -15,6 +15,7 @@
 // @grant        GM_notification
 // @connect      api.live.bilibili.com
 // @connect      passport.bilibili.com
+// @require      https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.0/qrcode.min.js
 // @run-at       document-end
 // ==/UserScript==
 
@@ -44,6 +45,8 @@
     "https://api.live.bilibili.com/room/v1/Room/update";
   const API_URL_STOP_LIVE =
     "https://api.live.bilibili.com/room/v1/Room/stopLive";
+  const API_URL_FACE_AUTH =
+    "https://api.live.bilibili.com/xlive/app-blink/v1/preLive/IsUserIdentifiedByFaceAuth";
 
   // 将 GM_xmlhttpRequest Promise 化
   function gmRequest(options) {
@@ -214,6 +217,17 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
+        #bili-qr-container {
+            background-color: var(--bili-bg) !important;
+            color: var(--bili-fg) !important;
+            border: 1px solid var(--bili-border) !important;
+        }
+        #bili-qr-container h3 {
+            color: var(--bili-title-color) !important;
+        }
+        #bili-qr-container p {
+            color: var(--bili-label-color) !important;
+        }
         .bili-btn-main {
             background: var(--bili-btn-main);
             color: var(--bili-btn-text);
@@ -338,6 +352,15 @@
     title: "",
     csrf_token: "",
     csrf: "",
+  };
+
+  // 人脸验证数据模板
+  const faceAuthData = {
+    room_id: "",
+    face_auth_code: "60024",
+    csrf_token: "",
+    csrf: "",
+    visit_id: "",
   };
 
   // 初始化入口
@@ -1208,10 +1231,15 @@
       if (startLiveResult.code === 0) {
         // 成功获取
         handleStartLiveSuccess(startLiveResult.data, liveTitle, areaId);
+      } else if (startLiveResult.code === 60024 || (startLiveResult.data && startLiveResult.data.qr)) {
+        // 需要人脸验证
+        console.log("需要人脸验证:", startLiveResult);
+        showMessage("需要人脸验证，正在显示二维码...");
+        await handleFaceAuth(startLiveResult.data.qr, roomId, liveTitle, areaId);
       } else {
         console.error("Start live API error:", startLiveResult);
         showMessage(
-          `获取推流码失败: ${startLiveResult.message || "未知错误"}`,
+          `获取推流码失败: ${startLiveResult.message || "未知错误"} (${startLiveResult.code})`,
           true
         );
       }
@@ -1227,6 +1255,186 @@
         errorMessage = `请求错误: ${errorResponse.message}`;
       }
       showMessage(errorMessage, true);
+    }
+  }
+
+  // 处理人脸验证
+  async function handleFaceAuth(qrUrl, roomId, title, areaId) {
+    if (!qrUrl) {
+      showMessage("未获取到人脸验证二维码", true);
+      return;
+    }
+
+    try {
+      // 显示二维码
+      showQRCode(qrUrl);
+      
+      // 设置人脸验证数据
+      faceAuthData.room_id = roomId;
+      faceAuthData.csrf_token = csrf;
+      faceAuthData.csrf = csrf;
+
+      // 轮询验证状态
+      let isVerified = false;
+      let attempts = 0;
+      const maxAttempts = 60; // 最多等待60秒
+
+      showMessage("请使用B站客户端扫描二维码进行人脸验证...");
+
+      while (!isVerified && attempts < maxAttempts) {
+        try {
+          const response = await gmRequest({
+            method: "POST",
+            url: API_URL_FACE_AUTH,
+            headers: headers,
+            data: new URLSearchParams(faceAuthData).toString(),
+          });
+
+          const result = JSON.parse(response.responseText);
+          
+          if (result.code === 0 && result.data && result.data.is_identified) {
+            isVerified = true;
+            hideQRCode();
+            showMessage("人脸验证成功，正在重新获取推流码...");
+            
+            // 验证成功后重新开始直播
+            await retryStartLive(roomId, title, areaId);
+            return;
+          }
+          
+          // 等待1秒后重试
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+          
+        } catch (error) {
+          console.error("人脸验证状态检查失败:", error);
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      // 超时处理
+      hideQRCode();
+      showMessage("人脸验证超时，请重试", true);
+      
+    } catch (error) {
+      console.error("人脸验证处理失败:", error);
+      hideQRCode();
+      showMessage("人脸验证处理失败，请重试", true);
+    }
+  }
+
+  // 显示二维码
+  function showQRCode(qrUrl) {
+    // 创建二维码容器
+    const qrContainer = document.createElement('div');
+    qrContainer.id = 'bili-qr-container';
+    qrContainer.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bili-bg);
+      border: 1px solid var(--bili-border);
+      border-radius: 12px;
+      padding: 20px;
+      z-index: 10002;
+      box-shadow: var(--bili-panel-shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      text-align: center;
+      min-width: 300px;
+    `;
+
+    const title = document.createElement('h3');
+    title.textContent = '人脸验证';
+    title.className = 'bili-title';
+    title.style.marginTop = '0';
+    
+    const instruction = document.createElement('p');
+    instruction.textContent = '请使用B站客户端扫描二维码进行人脸验证';
+    instruction.className = 'bili-label';
+    
+    const qrDiv = document.createElement('div');
+    qrDiv.id = 'bili-qr-code';
+    qrDiv.style.cssText = `
+      margin: 15px 0;
+      display: flex;
+      justify-content: center;
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '取消';
+    closeBtn.className = 'bili-btn-stop';
+    closeBtn.style.marginTop = '15px';
+    closeBtn.onclick = () => {
+      hideQRCode();
+      showMessage("已取消人脸验证", true);
+    };
+
+    qrContainer.appendChild(title);
+    qrContainer.appendChild(instruction);
+    qrContainer.appendChild(qrDiv);
+    qrContainer.appendChild(closeBtn);
+    
+    document.body.appendChild(qrContainer);
+
+    // 生成二维码
+    try {
+      if (typeof QRCode !== 'undefined') {
+        const qr = new QRCode(qrDiv, {
+          text: qrUrl,
+          width: 200,
+          height: 200,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        // 如果QRCode库未加载，显示链接
+        qrDiv.innerHTML = `<p>二维码库未加载，请手动访问：<br><a href="${qrUrl}" target="_blank">${qrUrl}</a></p>`;
+      }
+    } catch (error) {
+      console.error('生成二维码失败:', error);
+      qrDiv.innerHTML = `<p>生成二维码失败，请手动访问：<br><a href="${qrUrl}" target="_blank">${qrUrl}</a></p>`;
+    }
+  }
+
+  // 隐藏二维码
+  function hideQRCode() {
+    const qrContainer = document.getElementById('bili-qr-container');
+    if (qrContainer) {
+      qrContainer.remove();
+    }
+  }
+
+  // 重试开始直播
+  async function retryStartLive(roomId, title, areaId) {
+    try {
+      // 重新设置开始直播数据
+      startData.room_id = roomId;
+      startData.csrf_token = csrf;
+      startData.csrf = csrf;
+      startData.area_v2 = areaId;
+
+      const response = await gmRequest({
+        method: "POST",
+        url: API_URL_START_LIVE,
+        headers: headers,
+        data: new URLSearchParams(startData).toString(),
+      });
+
+      const result = JSON.parse(response.responseText);
+
+      if (result.code === 0) {
+        handleStartLiveSuccess(result.data, title, areaId);
+      } else {
+        console.error("重试开始直播失败:", result);
+        showMessage(`重试开始直播失败: ${result.message || "未知错误"} (${result.code})`, true);
+      }
+    } catch (error) {
+      console.error("重试开始直播请求失败:", error);
+      showMessage("重试开始直播请求失败", true);
     }
   }
 
