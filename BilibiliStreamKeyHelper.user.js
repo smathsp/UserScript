@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.8
+// @version      1.12
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -15,7 +15,7 @@
 // @grant        GM_notification
 // @connect      api.live.bilibili.com
 // @connect      passport.bilibili.com
-// @require      https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.0/qrcode.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js
 // @run-at       document-end
 // ==/UserScript==
 
@@ -1326,47 +1326,90 @@
 
   // 显示二维码
   function showQRCode(qrUrl) {
+    // 移除已存在的二维码容器和遮罩
+    const existingContainer = document.getElementById('bili-qr-container');
+    const existingOverlay = document.getElementById('bili-qr-overlay');
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+
+    // 创建遮罩层
+    const overlay = document.createElement('div');
+    overlay.id = 'bili-qr-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
     // 创建二维码容器
     const qrContainer = document.createElement('div');
     qrContainer.id = 'bili-qr-container';
     qrContainer.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--bili-bg);
-      border: 1px solid var(--bili-border);
+      position: relative;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid #ddd;
       border-radius: 12px;
-      padding: 20px;
-      z-index: 10002;
-      box-shadow: var(--bili-panel-shadow);
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       text-align: center;
       min-width: 300px;
+      max-width: 90vw;
+      max-height: 90vh;
     `;
 
     const title = document.createElement('h3');
     title.textContent = '人脸验证';
-    title.className = 'bili-title';
-    title.style.marginTop = '0';
+    title.style.cssText = `
+      margin: 0 0 15px 0;
+      color: #fb7299;
+      font-size: 18px;
+      font-weight: bold;
+    `;
     
     const instruction = document.createElement('p');
     instruction.textContent = '请使用B站客户端扫描二维码进行人脸验证';
-    instruction.className = 'bili-label';
+    instruction.style.cssText = `
+      margin: 0 0 20px 0;
+      color: #666;
+      font-size: 14px;
+    `;
     
     const qrDiv = document.createElement('div');
     qrDiv.id = 'bili-qr-code';
     qrDiv.style.cssText = `
-      margin: 15px 0;
+      margin: 20px auto;
       display: flex;
       justify-content: center;
+      align-items: center;
     `;
 
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '取消';
-    closeBtn.className = 'bili-btn-stop';
-    closeBtn.style.marginTop = '15px';
+    closeBtn.style.cssText = `
+      background: #ff4b4b;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin-top: 20px;
+      font-size: 14px;
+    `;
+    closeBtn.onmouseover = () => closeBtn.style.background = '#d9363e';
+    closeBtn.onmouseout = () => closeBtn.style.background = '#ff4b4b';
     closeBtn.onclick = () => {
       hideQRCode();
       showMessage("已取消人脸验证", true);
@@ -1377,34 +1420,101 @@
     qrContainer.appendChild(qrDiv);
     qrContainer.appendChild(closeBtn);
     
-    document.body.appendChild(qrContainer);
+    // 将二维码容器添加到遮罩层中
+    overlay.appendChild(qrContainer);
+    document.body.appendChild(overlay);
+    
+    // 点击遮罩层外部关闭二维码
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        hideQRCode();
+        showMessage("已取消人脸验证", true);
+      }
+    });
 
     // 生成二维码
     try {
       if (typeof QRCode !== 'undefined') {
-        const qr = new QRCode(qrDiv, {
-          text: qrUrl,
-          width: 200,
-          height: 200,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
+        console.log('QRCode库已加载');
+        console.log('qrUrl:', qrUrl);
+        console.log('QRCode.CorrectLevel:', QRCode.CorrectLevel);
+        
+        // 创建二维码 - 使用更兼容的方式
+        const qrcode = new QRCode(qrDiv, qrUrl);
+        
+        // 等待DOM更新后检查是否成功生成
+        setTimeout(() => {
+          if (qrDiv.innerHTML.trim() === '') {
+            console.log('⚠️ 二维码DOM为空，尝试备用方法');
+            // 备用方法：手动创建二维码
+            try {
+              qrDiv.innerHTML = '';
+              const qrcode2 = new QRCode(qrDiv, {
+                text: qrUrl,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff"
+              });
+              
+              // 再次检查
+              setTimeout(() => {
+                if (qrDiv.innerHTML.trim() === '') {
+                  console.log('⚠️ 备用方法也失败，显示链接');
+                  qrDiv.innerHTML = `
+                    <p style="color: #666; font-size: 14px; line-height: 1.5; text-align: center;">
+                      二维码生成失败，请手动访问：<br>
+                      <a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none; word-break: break-all;">${qrUrl}</a>
+                    </p>
+                  `;
+                } else {
+                  console.log('✅ 备用方法生成二维码成功');
+                }
+              }, 500);
+            } catch (backupError) {
+              console.error('备用二维码生成失败:', backupError);
+              qrDiv.innerHTML = `
+                <p style="color: #666; font-size: 14px; line-height: 1.5; text-align: center;">
+                  二维码生成失败，请手动访问：<br>
+                  <a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none; word-break: break-all;">${qrUrl}</a>
+                </p>
+              `;
+            }
+          } else {
+            console.log('✅ 二维码生成成功');
+          }
+        }, 500);
+        
       } else {
+        console.log('⚠️ QRCode库未加载，显示链接');
         // 如果QRCode库未加载，显示链接
-        qrDiv.innerHTML = `<p>二维码库未加载，请手动访问：<br><a href="${qrUrl}" target="_blank">${qrUrl}</a></p>`;
+        qrDiv.innerHTML = `
+          <p style="color: #666; font-size: 14px; line-height: 1.5; text-align: center;">
+            二维码库未加载，请手动访问：<br>
+            <a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none; word-break: break-all;">${qrUrl}</a>
+          </p>
+        `;
       }
     } catch (error) {
       console.error('生成二维码失败:', error);
-      qrDiv.innerHTML = `<p>生成二维码失败，请手动访问：<br><a href="${qrUrl}" target="_blank">${qrUrl}</a></p>`;
+      qrDiv.innerHTML = `
+        <p style="color: #ff4b4b; font-size: 14px; line-height: 1.5; text-align: center;">
+          生成二维码失败，请手动访问：<br>
+          <a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none; word-break: break-all;">${qrUrl}</a>
+        </p>
+      `;
     }
   }
 
   // 隐藏二维码
   function hideQRCode() {
     const qrContainer = document.getElementById('bili-qr-container');
+    const qrOverlay = document.getElementById('bili-qr-overlay');
     if (qrContainer) {
       qrContainer.remove();
+    }
+    if (qrOverlay) {
+      qrOverlay.remove();
     }
   }
 
