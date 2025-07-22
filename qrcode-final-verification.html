@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRCode 最终修复验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .qr-container {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>QRCode 最终修复验证</h1>
+    <p>测试修复后的 cdnjs qrcodejs 库是否能正常生成二维码</p>
+    
+    <div class="test-container">
+        <h2>修复后的 QRCode 库测试</h2>
+        <button onclick="testFixedQRCode()">测试修复后的库</button>
+        <div id="status" class="status">等待测试...</div>
+        <div id="qr-fixed" class="qr-container"></div>
+        <div id="log-fixed" class="log"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>模拟用户脚本环境测试</h2>
+        <button onclick="testUserScriptEnvironment()">模拟用户脚本测试</button>
+        <div id="status2" class="status">等待测试...</div>
+        <div id="qr-userscript" class="qr-container"></div>
+        <div id="log-userscript" class="log"></div>
+    </div>
+
+    <!-- 加载修复后的 QRCode 库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script>
+        function log(containerId, message, type = 'info') {
+            const logContainer = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logContainer.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearContainer(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+        }
+
+        function updateStatus(statusId, message, isSuccess) {
+            const statusEl = document.getElementById(statusId);
+            statusEl.textContent = message;
+            statusEl.className = `status ${isSuccess ? 'success' : 'error'}`;
+        }
+
+        // 测试修复后的 QRCode 库
+        function testFixedQRCode() {
+            clearContainer('qr-fixed');
+            log('log-fixed', '开始测试修复后的 cdnjs qrcodejs 库');
+            updateStatus('status', '测试中...', false);
+            
+            log('log-fixed', `QRCode 类型: ${typeof QRCode}`);
+            log('log-fixed', `QRCode.CorrectLevel: ${QRCode.CorrectLevel}`);
+            
+            if (typeof QRCode === 'undefined') {
+                log('log-fixed', '❌ QRCode 库未加载', 'error');
+                updateStatus('status', '❌ QRCode 库未加载', false);
+                return;
+            }
+            
+            try {
+                const testUrl = 'https://passport.bilibili.com/h5-app/passport/auth/scan?navhide=1&qrcode_key=fixed_test';
+                const qrDiv = document.getElementById('qr-fixed');
+                
+                log('log-fixed', '尝试生成二维码...');
+                log('log-fixed', `测试URL: ${testUrl}`);
+                
+                // 使用修复后的方法
+                const qr = new QRCode(qrDiv, {
+                    text: testUrl,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.M : undefined
+                });
+                
+                // 检查生成结果
+                setTimeout(() => {
+                    const content = qrDiv.innerHTML;
+                    log('log-fixed', `DOM内容长度: ${content.length}`);
+                    
+                    if (content && content.trim().length > 50) {
+                        log('log-fixed', '✅ 二维码生成成功！', 'success');
+                        updateStatus('status', '✅ 测试通过 - 二维码生成成功', true);
+                        
+                        // 检查是否包含 canvas 或 table 元素
+                        const hasCanvas = qrDiv.querySelector('canvas');
+                        const hasTable = qrDiv.querySelector('table');
+                        log('log-fixed', `包含 Canvas: ${!!hasCanvas}`);
+                        log('log-fixed', `包含 Table: ${!!hasTable}`);
+                    } else {
+                        log('log-fixed', '❌ 二维码生成失败 - DOM内容为空', 'error');
+                        updateStatus('status', '❌ 测试失败 - 二维码未生成', false);
+                    }
+                }, 1000);
+                
+            } catch (e) {
+                log('log-fixed', `❌ 生成异常: ${e.message}`, 'error');
+                updateStatus('status', `❌ 测试失败 - ${e.message}`, false);
+            }
+        }
+
+        // 模拟用户脚本环境测试
+        function testUserScriptEnvironment() {
+            clearContainer('qr-userscript');
+            log('log-userscript', '开始模拟用户脚本环境测试');
+            updateStatus('status2', '测试中...', false);
+            
+            // 模拟用户脚本中的 showQRCode 函数
+            function showQRCode(qrUrl) {
+                log('log-userscript', `开始显示二维码，qrUrl: \`${qrUrl}\``);
+                
+                const qrContainer = document.getElementById('qr-userscript');
+                qrContainer.innerHTML = '';
+                
+                if (typeof QRCode !== 'undefined') {
+                    log('log-userscript', 'QRCode库已加载');
+                    log('log-userscript', `qrUrl: \`${qrUrl}\``);
+                    log('log-userscript', `QRCode.CorrectLevel: ${QRCode.CorrectLevel}`);
+                    
+                    try {
+                        // 方法1: 简单构造
+                        log('log-userscript', '尝试方法1: new QRCode(div, url)');
+                        const qr = new QRCode(qrContainer, qrUrl);
+                        
+                        setTimeout(() => {
+                            const content = qrContainer.innerHTML;
+                            if (content && content.trim().length > 10) {
+                                log('log-userscript', '✅ 方法1成功生成二维码', 'success');
+                                updateStatus('status2', '✅ 用户脚本环境测试通过', true);
+                            } else {
+                                log('log-userscript', '⚠️ 二维码DOM为空，尝试备用方法', 'warning');
+                                
+                                // 备用方法
+                                qrContainer.innerHTML = '';
+                                try {
+                                    const qr2 = new QRCode(qrContainer, {
+                                        text: qrUrl,
+                                        width: 256,
+                                        height: 256,
+                                        colorDark: '#000000',
+                                        colorLight: '#ffffff'
+                                    });
+                                    
+                                    setTimeout(() => {
+                                        const content2 = qrContainer.innerHTML;
+                                        if (content2 && content2.trim().length > 10) {
+                                            log('log-userscript', '✅ 备用方法成功生成二维码', 'success');
+                                            updateStatus('status2', '✅ 用户脚本环境测试通过（备用方法）', true);
+                                        } else {
+                                            log('log-userscript', '⚠️ 备用方法也失败，显示链接', 'warning');
+                                            qrContainer.innerHTML = `<a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none;">点击打开人脸验证页面</a>`;
+                                            updateStatus('status2', '⚠️ 二维码生成失败，已显示备用链接', false);
+                                        }
+                                    }, 500);
+                                } catch (e2) {
+                                    log('log-userscript', `❌ 备用方法异常: ${e2.message}`, 'error');
+                                    qrContainer.innerHTML = `<a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none;">点击打开人脸验证页面</a>`;
+                                    updateStatus('status2', '❌ 二维码生成异常，已显示备用链接', false);
+                                }
+                            }
+                        }, 500);
+                    } catch (e) {
+                        log('log-userscript', `❌ 创建二维码异常: ${e.message}`, 'error');
+                        qrContainer.innerHTML = `<a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none;">点击打开人脸验证页面</a>`;
+                        updateStatus('status2', `❌ 二维码创建异常: ${e.message}`, false);
+                    }
+                } else {
+                    log('log-userscript', '❌ QRCode库未加载，显示链接', 'error');
+                    qrContainer.innerHTML = `<a href="${qrUrl}" target="_blank" style="color: #fb7299; text-decoration: none;">点击打开人脸验证页面</a>`;
+                    updateStatus('status2', '❌ QRCode库未加载', false);
+                }
+            }
+            
+            // 执行测试
+            const testUrl = 'https://passport.bilibili.com/h5-app/passport/auth/scan?navhide=1&qrcode_key=userscript_test';
+            showQRCode(testUrl);
+        }
+
+        // 页面加载完成后的初始化
+        window.onload = function() {
+            log('log-fixed', '页面加载完成，QRCode库状态检查');
+            log('log-userscript', '页面加载完成，准备模拟用户脚本环境');
+            
+            if (typeof QRCode !== 'undefined') {
+                log('log-fixed', '✅ QRCode库已成功加载', 'success');
+                log('log-userscript', '✅ QRCode库已成功加载', 'success');
+            } else {
+                log('log-fixed', '❌ QRCode库加载失败', 'error');
+                log('log-userscript', '❌ QRCode库加载失败', 'error');
+            }
+        };
+    </script>
+</body>
+</html>
