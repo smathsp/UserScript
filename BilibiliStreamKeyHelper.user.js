@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.13
+// @version      1.14
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -892,12 +892,81 @@
     return button;
   }
 
+  // 检查实际直播状态
+  async function checkActualLiveStatus() {
+    if (!roomId || !csrf) return;
+
+    try {
+      const response = await gmRequest({
+        method: "POST",
+        url: "https://api.live.bilibili.com/room/v1/Room/get_info",
+        headers: headers,
+        data: new URLSearchParams({ room_id: roomId }).toString(),
+      });
+
+      const result = JSON.parse(response.responseText);
+      if (result.code === 0 && result.data) {
+        const actualLiveStatus = result.data.live_status; // 0=未开播，1=直播中，2=轮播中
+
+        // 检查本地状态与实际状态是否一致
+        if (isLiveStarted && actualLiveStatus !== 1) {
+          // 本地认为在直播，但实际未直播 - 状态不一致
+          console.log("检测到直播状态不一致：本地显示直播中，但服务器显示未直播");
+
+          // 更新本地状态
+          isLiveStarted = false;
+          streamInfo = null;
+          GM_setValue(STORAGE_KEYS.IS_LIVE_STARTED, false);
+          GM_setValue(STORAGE_KEYS.STREAM_INFO, null);
+
+          // 更新UI
+          updateButtonsForLive(false);
+
+          // 清除结果区域或显示提示
+          const resultArea = document.getElementById("bili-result");
+          if (resultArea) {
+            resultArea.innerHTML = `<div class="bili-tip-yellow"><span style="font-weight:bold;">提示：</span>检测到该房间直播已被结束，已自动更新状态</div>`;
+            resultArea.style.display = "block";
+          }
+
+          // 显示通知
+          GM_notification({
+            text: "检测到直播已结束，状态已同步",
+            title: "B站推流码获取工具",
+            timeout: 5000,
+          });
+        } else if (!isLiveStarted && actualLiveStatus === 1) {
+          // 本地认为未直播，但实际在直播 - 可能是其他地方开启的直播
+          console.log("检测到可能存在其他地方开启的直播");
+
+          const resultArea = document.getElementById("bili-result");
+          if (resultArea) {
+            resultArea.innerHTML = `<div class="bili-tip-yellow"><span style="font-weight:bold;">提示：</span>检测到该房间正在直播中，可能是通过其他方式开启的</div>`;
+            resultArea.style.display = "block";
+          }
+        }
+      }
+    } catch (error) {
+      console.error("检查直播状态失败:", error);
+      // 静默失败，不影响正常使用
+    }
+  }
+
   // 显示/隐藏面板
-  function togglePanel() {
+  async function togglePanel() {
     const panel = document.getElementById("bili-stream-code-panel");
     if (!panel) return; // 理论上不会发生
-    panel.style.display =
-      panel.style.display === "none" || !panel.style.display ? "block" : "none";
+
+    const isShowing = panel.style.display === "none" || !panel.style.display;
+    panel.style.display = isShowing ? "block" : "none";
+
+    // 如果是显示面板，检查直播状态
+    if (isShowing) {
+      // 延迟一点检查，确保面板已显示
+      setTimeout(() => {
+        checkActualLiveStatus();
+      }, 100);
+    }
   }
 
   // 检查浮动按钮
