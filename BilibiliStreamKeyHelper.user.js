@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         B站推流码获取工具
 // @namespace    https://github.com/smathsp
-// @version      1.12
+// @version      1.13
 // @description  获取第三方推流码
 // @author       smathsp
 // @license      GPL-3.0
@@ -304,6 +304,16 @@
         .bili-message-error {
             color: red;
         }
+        .bili-status-success {
+            background: #d4edda !important;
+            color: #155724 !important;
+            border: 1px solid #c3e6cb !important;
+        }
+        .bili-status-error {
+            background: #f8d7da !important;
+            color: #721c24 !important;
+            border: 1px solid #f5c6cb !important;
+        }
         `;
     document.head.appendChild(style);
   }
@@ -311,8 +321,10 @@
   // 全局变量
   let roomId = null; // 当前房间ID
   let csrf = null; // CSRF令牌
-  let startLiveButton = null; // “开始直播”按钮引用
-  let stopLiveButton = null; // “结束直播”按钮引用
+  let startLiveButton = null; // "开始直播"按钮引用
+  let stopLiveButton = null; // "结束直播"按钮引用
+  let editTitleButton = null; // "修改标题"按钮引用
+  let editAreaButton = null; // "修改分区"按钮引用
   let isLiveStarted = GM_getValue(STORAGE_KEYS.IS_LIVE_STARTED, false); // 直播状态
   let streamInfo = GM_getValue(STORAGE_KEYS.STREAM_INFO, null); // 推流信息缓存
 
@@ -350,6 +362,15 @@
     room_id: "",
     platform: "pc_link", //感谢bilibili Z-Lake提供
     title: "",
+    csrf_token: "",
+    csrf: "",
+  };
+
+  // 修改直播分区数据模板
+  const areaData = {
+    room_id: "",
+    platform: "pc_link", //感谢bilibili Z-Lake提供
+    area_id: "",
     csrf_token: "",
     csrf: "",
   };
@@ -394,6 +415,8 @@
     // 清空按钮引用，防止旧引用干扰
     startLiveButton = null;
     stopLiveButton = null;
+    editTitleButton = null;
+    editAreaButton = null;
   }
 
   // 创建UI（只创建一次主面板）
@@ -783,7 +806,33 @@
   // 创建按钮组
   function createButtonGroup() {
     const container = document.createElement("div");
-    container.style.cssText = "display: flex; gap: 10px; margin-top: 10px;";
+    container.style.cssText = "display: flex; flex-direction: column; gap: 8px; margin-top: 10px;";
+
+    // 修改按钮组（直播中显示）
+    const editButtonsContainer = document.createElement("div");
+    editButtonsContainer.id = "bili-edit-buttons";
+    editButtonsContainer.style.cssText = "display: none; gap: 8px;";
+
+    // 修改标题按钮
+    editTitleButton = document.createElement("button");
+    editTitleButton.textContent = "修改标题";
+    editTitleButton.className = "bili-btn-main";
+    editTitleButton.style.cssText = "flex: 1; font-size: 13px; padding: 8px;";
+    editTitleButton.onclick = editLiveTitle;
+
+    // 修改分区按钮
+    editAreaButton = document.createElement("button");
+    editAreaButton.textContent = "修改分区";
+    editAreaButton.className = "bili-btn-main";
+    editAreaButton.style.cssText = "flex: 1; font-size: 13px; padding: 8px;";
+    editAreaButton.onclick = editLiveArea;
+
+    editButtonsContainer.appendChild(editTitleButton);
+    editButtonsContainer.appendChild(editAreaButton);
+
+    // 主按钮组
+    const mainButtonsContainer = document.createElement("div");
+    mainButtonsContainer.style.cssText = "display: flex; gap: 10px;";
 
     // 开始直播按钮
     startLiveButton = document.createElement("button");
@@ -800,8 +849,11 @@
     stopLiveButton.disabled = true;
     stopLiveButton.onclick = stopLive;
 
-    container.appendChild(startLiveButton);
-    container.appendChild(stopLiveButton);
+    mainButtonsContainer.appendChild(startLiveButton);
+    mainButtonsContainer.appendChild(stopLiveButton);
+
+    container.appendChild(editButtonsContainer);
+    container.appendChild(mainButtonsContainer);
 
     return container;
   }
@@ -1080,6 +1132,16 @@
     if (stopLiveButton) {
       stopLiveButton.disabled = !(roomId && String(roomId).trim() !== "");
     }
+    
+    // 控制修改按钮的显示
+    const editButtonsContainer = document.getElementById("bili-edit-buttons");
+    if (editButtonsContainer) {
+      if (isLive) {
+        editButtonsContainer.style.display = "flex";
+      } else {
+        editButtonsContainer.style.display = "none";
+      }
+    }
   }
 
   // 恢复直播状态
@@ -1148,32 +1210,67 @@
     applyColorMode(isDarkMode);
   }
 
-  // 更新按钮状态（用于直播开始/结束）
-  function updateButtonsForLive(isLive) {
-    if (isLive) {
-      // 直播开始状态
-      if (startLiveButton) {
-        startLiveButton.disabled = true;
-        startLiveButton.style.opacity = "0.5";
-      }
+  // 修改直播标题
+  async function editLiveTitle() {
+    if (!isLiveStarted || !roomId) {
+      showMessage("请先开始直播", true);
+      return;
+    }
 
-      if (stopLiveButton) {
-        stopLiveButton.disabled = false;
-        stopLiveButton.style.opacity = "1";
-        stopLiveButton.style.backgroundColor = "#ff4b4b";
-      }
-    } else {
-      // 直播结束状态
-      if (startLiveButton) {
-        startLiveButton.disabled = false;
-        startLiveButton.style.opacity = "1";
-      }
+    // 直接使用UI输入框的值
+    const newTitle = document.getElementById("bili-title").value.trim();
+    if (!newTitle) {
+      showMessage("请输入直播标题", true);
+      return;
+    }
 
-      if (stopLiveButton) {
-        stopLiveButton.disabled = true;
-        stopLiveButton.style.opacity = "0.5";
-        stopLiveButton.style.backgroundColor = "#999";
+    try {
+      const success = await updateLiveTitle(roomId, newTitle);
+      if (success) {
+        // 更新本地存储的标题信息
+        if (streamInfo) {
+          streamInfo.title = newTitle;
+          GM_setValue(STORAGE_KEYS.STREAM_INFO, streamInfo);
+        }
+        GM_setValue(STORAGE_KEYS.LAST_TITLE, newTitle);
+        showMessage("直播标题修改成功");
+      } else {
+        showMessage("修改直播标题失败，请检查权限或网络连接", true);
       }
+    } catch (error) {
+      console.error("修改标题错误:", error);
+      showMessage("修改直播标题时发生错误", true);
+    }
+  }
+
+  // 修改直播分区
+  async function editLiveArea() {
+    if (!isLiveStarted || !roomId) {
+      showMessage("请先开始直播", true);
+      return;
+    }
+
+    const areaSelect = document.getElementById("bili-area");
+    const newAreaId = areaSelect.value;
+
+    try {
+      // 直接更新分区，不重新开播
+      const success = await updateLiveArea(roomId, newAreaId);
+      
+      if (success) {
+        // 更新本地存储的分区信息
+        if (streamInfo) {
+          streamInfo.areaId = newAreaId;
+          GM_setValue(STORAGE_KEYS.STREAM_INFO, streamInfo);
+        }
+        GM_setValue(STORAGE_KEYS.LAST_AREA_ID, newAreaId);
+        showMessage("分区修改成功，直播继续进行中");
+      } else {
+        showMessage("修改分区失败，请检查权限或网络连接", true);
+      }
+    } catch (error) {
+      console.error("修改分区错误:", error);
+      showMessage("修改分区时发生错误", true);
     }
   }
 
@@ -1665,6 +1762,30 @@
     }
   }
 
+  // 更新直播分区
+  async function updateLiveArea(roomId, areaId) {
+    areaData.room_id = roomId;
+    areaData.area_id = areaId;
+    areaData.csrf_token = csrf;
+    areaData.csrf = csrf;
+    try {
+      const response = await gmRequest({
+        method: "POST",
+        url: API_URL_UPDATE_ROOM,
+        headers: headers,
+        data: new URLSearchParams(areaData).toString(),
+      });
+      const result = JSON.parse(response.responseText);
+      if (result.code !== 0) {
+        console.error("Update area API error:", result);
+      }
+      return result.code === 0;
+    } catch (errorResponse) {
+      console.error("Update area request error:", errorResponse);
+      return false;
+    }
+  }
+
   // 停止直播
   async function stopLive() {
     if (!isLiveStarted) return;
@@ -1698,6 +1819,14 @@
 
         GM_setValue("isLiveStarted", false);
         GM_setValue("streamInfo", null);
+
+        // 隐藏推流信息区域，回到未开播状态
+        const resultArea = document.getElementById("bili-result");
+        if (resultArea) {
+          setTimeout(() => {
+            resultArea.style.display = "none";
+          }, 2000); // 2秒后隐藏，让用户看到结束成功的消息
+        }
       } else {
         console.error("Stop live API error:", result);
         showMessage(`结束直播失败: ${result.message || "未知错误"}`, true);
@@ -1717,21 +1846,62 @@
     }
   }
 
-  // 显示消息
+  // 显示消息（优化版：不覆盖推流信息）
   function showMessage(message, isError = false) {
     const resultArea = document.getElementById("bili-result");
-    if (resultArea) {
+    if (resultArea && isLiveStarted && streamInfo) {
+      // 如果已开播，在推流信息区域内添加状态提示
+      showStatusInStreamInfo(message, isError);
+    } else if (resultArea) {
+      // 未开播时，正常显示消息
       resultArea.innerHTML = `<p class="bili-message${
         isError ? " bili-message-error" : ""
       }">${message}</p>`;
       resultArea.style.display = "block";
     }
 
+    // 始终显示Toast通知
     GM_notification({
       text: message,
       title: isError ? "错误" : "B站推流码获取工具",
       timeout: 5000,
     });
+  }
+
+  // 在推流信息区域显示状态提示
+  function showStatusInStreamInfo(message, isError = false) {
+    const resultArea = document.getElementById("bili-result");
+    if (!resultArea) return;
+
+    // 查找或创建状态栏
+    let statusBar = document.getElementById("bili-status-bar");
+    if (!statusBar) {
+      statusBar = document.createElement("div");
+      statusBar.id = "bili-status-bar";
+      statusBar.style.cssText = `
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.3s ease;
+      `;
+      // 将状态栏插入到推流信息的前面
+      resultArea.insertBefore(statusBar, resultArea.firstChild);
+    }
+
+    // 设置状态栏样式和内容
+    statusBar.className = isError ? "bili-status-error" : "bili-status-success";
+    statusBar.textContent = message;
+    statusBar.style.display = "block";
+
+    // 3秒后自动隐藏状态栏
+    clearTimeout(statusBar._hideTimer);
+    statusBar._hideTimer = setTimeout(() => {
+      if (statusBar) {
+        statusBar.style.display = "none";
+      }
+    }, 3000);
   }
 
   // 复制到剪贴板
